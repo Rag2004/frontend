@@ -1,0 +1,109 @@
+/* Portfolio Builder — institutional design tokens */
+.pf-inst {
+  --pf-bg: #08111f;
+  --pf-card: #0d1726;
+  --pf-border: #1b2a41;
+  --pf-accent: #38bdf8;
+  --pf-success: #22c55e;
+  --pf-warning: #f59e0b;
+  --pf-danger: #ef4444;
+  --pf-text: #e2e8f0;
+  --pf-muted: #94a3b8;
+  --pf-kpi-size: 2rem;
+  --pf-title-size: 1.25rem;
+  --pf-body-size: 0.875rem;
+  --pf-meta-size: 0.75rem;
+  --pf-space: 8px;
+}
+
+.pf-inst-card {
+  background: var(--pf-card);
+  border: 1px solid var(--pf-border);
+  border-radius: var(--radius-lg);
+}
+
+.pf-inst-section-title {
+  font-size: var(--pf-meta-size);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--pf-muted);
+}
+
+.pf-inst-kpi-value {
+  font-size: var(--pf-kpi-size);
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
+  color: var(--pf-text);
+}
+
+.pf-inst-grid-6 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: calc(var(--pf-space) * 1);
+}
+@media (min-width: 768px) {
+  .pf-inst-grid-6 { grid-template-columns: repeat(3, 1fr); }
+}
+@media (min-width: 1280px) {
+  .pf-inst-grid-6 { grid-template-columns: repeat(6, 1fr); }
+}
+
+.pf-inst-layout {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--pf-space) * 1.5);
+}
+
+.pf-inst-row-2 {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: calc(var(--pf-space) * 1.5);
+}
+@media (min-width: 1100px) {
+  .pf-inst-row-2 { grid-template-columns: 1fr 1.2fr; }
+}
+
+.pf-inst-analytics-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: calc(var(--pf-space) * 1.5);
+}
+@media (min-width: 1100px) {
+  .pf-inst-analytics-row { grid-template-columns: 1fr 1fr; }
+}
+
+.pf-inst-charts-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: calc(var(--pf-space) * 1);
+}
+@media (min-width: 768px) {
+  .pf-inst-charts-grid { grid-template-columns: 1fr 1fr; }
+}
+
+.pf-inst-action-bar {
+  position: sticky;
+  bottom: 0.5rem;
+  z-index: 30;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: rgba(8, 17, 31, 0.96);
+  border: 1px solid var(--pf-border);
+  border-radius: var(--radius-lg);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.pf-risk--good { color: var(--pf-success); }
+.pf-risk--warn { color: var(--pf-warning); }
+.pf-risk--bad { color: var(--pf-danger); }
+
+.pf-heat-cell--muted {
+  opacity: 0.92;
+}
