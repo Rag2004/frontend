@@ -13,7 +13,7 @@ import {
   nfS010UntaggedSectionLabel,
   nfS010WaveSectionLabel,
 } from '../lib/strategyWaveUi';
-import { apiBrokerId, getDeskBookConfig } from '../config/deskProfile';
+import { getDeskBookConfig } from '../config/deskProfile';
 import { API } from '../config/deskApi';
 
 const DESK_BOOK = getDeskBookConfig();
@@ -265,7 +265,7 @@ export default function Orders() {
     [closedDatePreset, closedCustomDate]
   );
 
-  const brokerParam = DESK_BOOK.locked ? DESK_BOOK.broker : apiBrokerId(broker);
+  const brokerParam = broker === 'dhan_sandbox' ? 'dhan_sandbox' : broker === 'kotak_sandbox' ? 'kotak_sandbox' : DESK_BOOK.broker;
 
   const loadPositions = useCallback(() => {
     const q = brokerParam ? `?broker=${brokerParam}` : '';
@@ -466,15 +466,7 @@ export default function Orders() {
       },
     },
     { accessorKey: 'quantity', header: 'Qty', meta: { numeric: true }, cell: ({ getValue }) => getValue() },
-    {
-      accessorKey: 'avg_price',
-      header: 'Avg Price',
-      meta: { numeric: true },
-      cell: ({ getValue }) => {
-        const value = getValue();
-        return value != null && value !== '' ? Number(value).toFixed(2) : '—';
-      },
-    },
+    { accessorKey: 'avg_price', header: 'Avg Price', meta: { numeric: true }, cell: ({ getValue }) => getValue() },
     {
       accessorKey: 'unrealized_pnl', header: 'Unreal PnL', meta: { numeric: true },
       cell: ({ getValue }) => {

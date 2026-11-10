@@ -171,15 +171,15 @@ export default function BrokerReconciliation() {
     },
     {
       accessorKey: 'broker_unrealized',
-      header: 'PnL',
-      cell: ({ row }) => {
+      header: 'MTM',
+      cell: ({ row, getValue }) => {
         const brokerQty = Number(row.original.broker_net_qty || 0);
         if (brokerQty === 0) return '—';
+        const mtm = getValue();
         const ltp = row.original.broker_ltp;
         return (
           <div>
-            <div className="font-mono tabular-nums">R ₹{fmtINR(row.original.broker_realized)}</div>
-            <div className="font-mono tabular-nums">U ₹{fmtINR(row.original.broker_unrealized)}</div>
+            <div className="font-mono tabular-nums">₹{fmtINR(mtm)}</div>
             {ltp != null ? (
               <div className="font-mono text-[0.65rem] text-desk-muted">LTP ₹{fmtINR(ltp)}</div>
             ) : null}
@@ -234,9 +234,7 @@ export default function BrokerReconciliation() {
         <div>
           <h1 className="text-xl font-semibold text-desk-text">Broker Reconciliation</h1>
           <p className="mt-1 text-sm text-desk-muted">
-            {DESK_BOOK.broker === 'kotak_sandbox'
-              ? 'Read-only comparison of the live desk book against Kotak positions.'
-              : 'Read-only comparison of the live desk book against Dhan /v2/positions.'}
+            Read-only comparison of the live desk book against Kotak positions.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -277,15 +275,7 @@ export default function BrokerReconciliation() {
           hint="Today fills vs current desk positions"
           tone={todayFillIssueCount ? 'text-red-300' : 'text-emerald-300'}
         />
-        <SummaryCard
-          label="Broker PnL"
-          value={`₹${fmtINR(snapshot?.broker_pnl?.total)}`}
-          hint={
-            DESK_BOOK.broker === 'kotak_sandbox'
-              ? `R ₹${fmtINR(snapshot?.broker_pnl?.realized)} / U ₹${fmtINR(snapshot?.broker_pnl?.unrealized)} (live tick mark)`
-              : `R ₹${fmtINR(snapshot?.broker_pnl?.realized)} / U ₹${fmtINR(snapshot?.broker_pnl?.unrealized)} (open, LTP-polled)`
-          }
-        />
+        <SummaryCard label="Broker PnL" value={`₹${fmtINR(snapshot?.broker_pnl?.total)}`} hint={`R ₹${fmtINR(snapshot?.broker_pnl?.realized)} / U ₹${fmtINR(snapshot?.broker_pnl?.unrealized)} (live tick mark)`} />
       </div>
 
       {snapshot?.message ? (

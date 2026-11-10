@@ -4,7 +4,6 @@ const DISPLAY_ALIASES = {
   NF_S59_V1: 'NF_S39',
   NF_S58_V7: 'NF_S38',
   NF_S310_V1: 'NF_S33',
-  MANUAL_TEST: 'Manual Test',
 };
 
 function stripVersionSuffix(id) {

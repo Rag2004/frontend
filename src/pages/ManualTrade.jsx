@@ -185,10 +185,6 @@ export default function ManualTrade() {
       return;
     }
     const firstId = selectedIds[0];
-    if (selectedIds.length === 1 && firstId === 'MANUAL_TEST') {
-      setLegs([{ ...defaultMlLeg(), quantity: 20, strike: '' }]);
-      return;
-    }
     const bc = configs.find((c) => c.strategy_id === firstId);
     const mult = getContractMultiplier(Number(bc?.underlying_scrip ?? 13), symbols);
     const rmsRow = rmsStrategies.find((s) => s.id === firstId);
@@ -227,9 +223,7 @@ export default function ManualTrade() {
     return selectedIds.every((id) => ctxMap[id]?.has_snapshot);
   }, [selectedIds, ctxMap]);
 
-  const manualTestOnly = selectedIds.length === 1 && selectedIds[0] === 'MANUAL_TEST';
-
-  const submit = async (priceMode) => {
+  const submit = async () => {
     if (selectedIds.length === 0) {
       flash('Select at least one strategy');
       return;
@@ -240,13 +234,6 @@ export default function ManualTrade() {
     }
     for (let i = 0; i < legs.length; i += 1) {
       const row = legs[i];
-      if (priceMode === 'ltp_minus_1') {
-        if (row.side !== 'BUY') {
-          flash('LTP − 1 is a buy only');
-          return;
-        }
-        continue;
-      }
       if ((row.order_type || 'MARKET') === 'LIMIT') {
         const lp = parseFloat(String(row.limit_price ?? '').trim());
         if (!Number.isFinite(lp) || lp <= 0) {
@@ -264,7 +251,7 @@ export default function ManualTrade() {
           throw new Error('Enter strike for each leg');
         }
         const ot = String(row.option_type || 'CE').toUpperCase();
-        const orderType = priceMode === 'ltp_minus_1' ? 'LIMIT' : (row.order_type || 'MARKET');
+        const orderType = row.order_type || 'MARKET';
         const leg = {
           side: row.side,
           quantity: Math.max(1, Number(row.quantity) || 1),
@@ -272,9 +259,7 @@ export default function ManualTrade() {
           option_type: ot === 'PE' ? 'PE' : 'CE',
           order_type: orderType,
         };
-        if (priceMode === 'ltp_minus_1') {
-          leg.price_mode = 'ltp_minus_1';
-        } else if (orderType === 'LIMIT') {
+        if (orderType === 'LIMIT') {
           leg.limit_price = parseFloat(String(row.limit_price).trim());
         }
         return leg;
@@ -602,26 +587,10 @@ export default function ManualTrade() {
         </div>
 
           <div className="mt-actions">
-            <button type="button" className="ml-btn ml-btn--primary" onClick={() => submit()} disabled={busy || ctxLoading || selectedIds.length === 0 || !allChainsReady}>
+            <button type="button" className="ml-btn ml-btn--primary" onClick={submit} disabled={busy || ctxLoading || selectedIds.length === 0 || !allChainsReady}>
               {busy ? 'Sending…' : 'Send orders'}
             </button>
-            {manualTestOnly ? (
-              <button
-                type="button"
-                className="ml-btn"
-                onClick={() => submit('ltp_minus_1')}
-                disabled={busy || ctxLoading || !allChainsReady}
-                title="Live Kotak buy at the chain price minus ₹1. Chase will modify it and it can fill."
-              >
-                {busy ? 'Sending…' : 'Fire at LTP − 1'}
-              </button>
-            ) : null}
           </div>
-          {manualTestOnly ? (
-            <p className="ml-hint">
-              Fire at LTP − 1 places a live buy one rupee under the chain. Kotak chase modifies that order toward the market, and it can fill.
-            </p>
-          ) : null}
         </section>
       </article>
     </div>

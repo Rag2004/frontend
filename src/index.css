@@ -1383,7 +1383,6 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
   border-top: 1px solid var(--border);
   display: flex;
   justify-content: flex-end;
-  gap: 0.75rem;
 }
 .mt-actions .ml-btn--primary {
   min-width: 10rem;
