@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { DeskTable } from '../components/DeskTable';
 import { useApiPoll } from '../hooks/useApiPoll';
 import { getDeskBookConfig } from '../config/deskProfile';
-import { API } from '../config/deskApi';
+import { API, deskFetch } from '../config/deskApi';
 import { getStrategyDisplayName } from '../lib/strategyDisplayNames';
 
 const POLL_MS = 2_000;
@@ -82,6 +82,7 @@ export default function BrokerReconciliation() {
   const [confirmEnabled, setConfirmEnabled] = useState(false);
   const [pendingAlert, setPendingAlert] = useState(null);
   const [confirmBusy, setConfirmBusy] = useState(false);
+  const [dismissingId, setDismissingId] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
 
@@ -128,6 +129,30 @@ export default function BrokerReconciliation() {
       setConfirmBusy(false);
     }
   }, [pendingAlert, load]);
+
+  const dismissAlert = useCallback(async (alert) => {
+    const id = alert.fingerprint || alert.alert_id;
+    setDismissingId(id);
+    setError('');
+    try {
+      const r = await deskFetch(`${API}/reconciliation/state-alerts/dismiss`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          alert_id: alert.alert_id,
+          fingerprint: alert.fingerprint,
+        }),
+      });
+      const body = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(typeof body?.detail === 'string' ? body.detail : `Dismiss failed ${r.status}`);
+      if (pendingAlert?.fingerprint === alert.fingerprint) setPendingAlert(null);
+      await load();
+    } catch (e) {
+      setError(e?.message || 'Dismiss failed');
+    } finally {
+      setDismissingId('');
+    }
+  }, [load, pendingAlert]);
 
   useApiPoll(load, POLL_MS, true, [load]);
 
@@ -286,7 +311,7 @@ export default function BrokerReconciliation() {
 
       <section className="space-y-2">
         <h2 className="font-mono text-sm uppercase tracking-wider text-desk-muted">Strategy book alerts</h2>
-        <p className="text-xs text-desk-muted">The recon service only raises these alerts. A repair runs after you confirm one row.</p>
+        <p className="text-xs text-desk-muted">Dismiss hides a row. Reconcile can send an order after you confirm it.</p>
         <div className="overflow-x-auto rounded-desk-md border border-desk-border">
           <table className="min-w-full text-left text-sm">
             <thead className="font-mono text-[0.65rem] uppercase tracking-wider text-desk-muted">
@@ -314,17 +339,25 @@ export default function BrokerReconciliation() {
                   <td className="px-3 py-2 font-mono tabular-nums">{fmtQty(alert.broker_qty)}</td>
                   <td className="px-3 py-2 text-xs">{alert.text}</td>
                   <td className="px-3 py-2">
-                    {alert.actionable && confirmEnabled ? (
+                    <div className="flex flex-wrap items-center gap-2">
+                      {alert.actionable && confirmEnabled ? (
+                        <button
+                          type="button"
+                          className="rounded border border-red-500/40 px-2 py-1 text-xs text-red-200"
+                          onClick={() => setPendingAlert(alert)}
+                        >
+                          Reconcile
+                        </button>
+                      ) : null}
                       <button
                         type="button"
-                        className="rounded border border-red-500/40 px-2 py-1 text-xs text-red-200"
-                        onClick={() => setPendingAlert(alert)}
+                        className="rounded border border-desk-border px-2 py-1 text-xs text-desk-muted"
+                        disabled={dismissingId === (alert.fingerprint || alert.alert_id)}
+                        onClick={() => dismissAlert(alert)}
                       >
-                        Reconcile
+                        {dismissingId === (alert.fingerprint || alert.alert_id) ? 'Dismissing…' : 'Dismiss'}
                       </button>
-                    ) : (
-                      <span className="text-xs text-desk-muted">{alert.actionable ? 'Confirm off' : 'No button'}</span>
-                    )}
+                    </div>
                   </td>
                 </tr>
               ))}
