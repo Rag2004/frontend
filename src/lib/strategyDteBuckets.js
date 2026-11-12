@@ -1,4 +1,4 @@
-import { SN_S275_PARENT_IDS } from './snS275Desk';
+import { NF_PEN_12_PARENT_IDS, NF_TGT_PEN12_PARENT_IDS, NF_TR_PEN_12_PARENT_IDS, SN_PEN_12_PARENT_IDS, SN_TGT_PEN12_PARENT_IDS, SN_TR_PEN12_PARENT_IDS } from './snS275Desk';
 
 /** Frontend-only DTE bucket filters for Setup & Risk (backend IDs unchanged). */
 
@@ -43,7 +43,12 @@ const STRATEGY_DTE_BUCKETS = {
   SN_S09: [DTE_FILTERS.SENSEX_0DT],
   SN_S_54_V4: [DTE_FILTERS.SENSEX_0DT],
   MANUAL_TEST: [DTE_FILTERS.SENSEX_0DT],
-  ...Object.fromEntries(SN_S275_PARENT_IDS.map((id) => [id, [DTE_FILTERS.SENSEX_0DT]])),
+  ...Object.fromEntries(SN_PEN_12_PARENT_IDS.map((id) => [id, [DTE_FILTERS.SENSEX_0DT]])),
+  ...Object.fromEntries(NF_PEN_12_PARENT_IDS.map((id) => [id, [DTE_FILTERS.NIFTY_0DT]])),
+  ...Object.fromEntries(SN_TGT_PEN12_PARENT_IDS.map((id) => [id, [DTE_FILTERS.SENSEX_0DT]])),
+  ...Object.fromEntries(NF_TGT_PEN12_PARENT_IDS.map((id) => [id, [DTE_FILTERS.NIFTY_0DT]])),
+  ...Object.fromEntries(SN_TR_PEN12_PARENT_IDS.map((id) => [id, [DTE_FILTERS.SENSEX_0DT]])),
+  ...Object.fromEntries(NF_TR_PEN_12_PARENT_IDS.map((id) => [id, [DTE_FILTERS.NIFTY_0DT]])),
   ...Object.fromEntries(NF_S90_IDS.map((id) => [id, NIFTY_MULTI])),
   ...Object.fromEntries(SN_275_IDS.map((id) => [id, [DTE_FILTERS.SENSEX_0DT]])),
 };

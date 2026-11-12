@@ -96,6 +96,8 @@ export default function SetupAndRisk() {
   const [symbols, setSymbols] = useState([]);
   const [rerunBusyById, setRerunBusyById] = useState({});
   const [familyBusy, setFamilyBusy] = useState(false);
+  const [familyForms, setFamilyForms] = useState({});
+  const [familyLimitsBusy, setFamilyLimitsBusy] = useState(false);
   const [strategySl, setStrategySl] = useState({});
   const decisionIntervalRef = useRef(null);
   const { strategyWorkerOk, strategyWorkerStatus } = useDeskShell();
@@ -209,23 +211,91 @@ export default function SetupAndRisk() {
           }),
         }),
       ]);
+      const problems = [];
       if (!beRes.ok) {
         const detail = await beRes.text().catch(() => '');
-        flash(`Backend bulk toggle failed (${beRes.status}) ${detail.slice(0, 120)}`);
-        return;
+        problems.push(`Backend bulk toggle failed (${beRes.status}) ${detail.slice(0, 120)}`);
       }
       if (!rmsRes.ok) {
         const detail = await rmsRes.text().catch(() => '');
-        flash(`RMS bulk toggle failed (${rmsRes.status}) ${detail.slice(0, 120)}`);
-        return;
+        problems.push(`RMS bulk toggle failed (${rmsRes.status}) ${detail.slice(0, 120)}`);
       }
       loadBackend();
       loadRms();
+      if (problems.length) {
+        flash(problems.join(' · '));
+        return;
+      }
       flash(`${ids.length} algos ${live ? 'ON' : 'OFF'}`);
     } catch (err) {
+      loadBackend();
+      loadRms();
       flash(`Family toggle failed: ${err?.message || err}`);
     } finally {
       setFamilyBusy(false);
+    }
+  };
+
+  const applyFamilyLimits = async (section) => {
+    if (familyLimitsBusy || !section?.strategies?.length) return;
+    const form = familyForms[section.id] || {};
+    const patch = {};
+    const lots = String(form.lot_size ?? '').trim();
+    if (lots !== '') {
+      const n = Number(lots);
+      if (!Number.isFinite(n) || n < 1) {
+        flash('Lots must be at least 1');
+        return;
+      }
+      patch.lot_size = Math.floor(n);
+    }
+    const limitFields = [
+      ['max_daily_loss', 'Max loss'],
+      ['max_orders_per_sec', 'Max orders/sec'],
+      ['max_trades_per_day', 'Max trades/day'],
+      ['retry_wait_sec', 'Retry wait'],
+    ];
+    for (const [key, label] of limitFields) {
+      const raw = String(form[key] ?? '').trim();
+      if (raw === '') continue;
+      const n = Number(raw);
+      if (!Number.isFinite(n)) {
+        flash(`${label} must be a number`);
+        return;
+      }
+      patch[key] = n;
+    }
+    if (!Object.keys(patch).length) {
+      flash('Enter lots or a limit to apply');
+      return;
+    }
+    const ids = section.strategies.map((s) => s.id).filter(Boolean);
+    if (!ids.length) return;
+    const strategies = Object.fromEntries(ids.map((id) => [id, { ...patch }]));
+    setFamilyLimitsBusy(section.id);
+    try {
+      const res = await deskFetch(`${RMS_API}/config/limits`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ strategies }),
+      });
+      if (!res.ok) {
+        const detail = await res.text().catch(() => '');
+        flash(`Family limits failed (${res.status}) ${detail.slice(0, 120)}`);
+        return;
+      }
+      const parts = [];
+      if (patch.lot_size != null) parts.push(`lots ${patch.lot_size}`);
+      if (patch.max_daily_loss != null) parts.push(`loss ${patch.max_daily_loss}`);
+      if (patch.max_orders_per_sec != null) parts.push(`orders/sec ${patch.max_orders_per_sec}`);
+      if (patch.max_trades_per_day != null) parts.push(`trades/day ${patch.max_trades_per_day}`);
+      if (patch.retry_wait_sec != null) parts.push(`retry ${patch.retry_wait_sec}s`);
+      flash(`${ids.length} books updated: ${parts.join(', ')}`);
+    } catch (err) {
+      flash(`Family limits failed: ${err?.message || err}`);
+    } finally {
+      loadRms();
+      setFamilyLimitsBusy(false);
     }
   };
 
@@ -711,7 +781,42 @@ export default function SetupAndRisk() {
                               {section.familyToggle ? `${section.liveCount}/${count} live` : `${section.liveCount} live`}
                             </span>
                             {section.familyToggle && (
-                              <span onClick={(event) => event.stopPropagation()} onKeyDown={(event) => event.stopPropagation()}>
+                              <span
+                                onClick={(event) => event.stopPropagation()}
+                                onKeyDown={(event) => event.stopPropagation()}
+                                style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', flexWrap: 'wrap' }}
+                              >
+                                {[
+                                  ['lot_size', 'Lots', '1'],
+                                  ['max_daily_loss', 'Loss/lot', '-10000'],
+                                  ['max_orders_per_sec', 'Ord/s', '5'],
+                                  ['max_trades_per_day', 'Trades', '50'],
+                                  ['retry_wait_sec', 'Retry', '5'],
+                                ].map(([key, label, placeholder]) => (
+                                  <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.65rem', color: 'var(--text-muted)' }}>
+                                    {label}
+                                    <input
+                                      type="number"
+                                      inputMode="decimal"
+                                      placeholder={placeholder}
+                                      aria-label={`${section.label} ${label}`}
+                                      value={familyForms[section.id]?.[key] ?? ''}
+                                      onChange={(event) => setFamilyForms((prev) => ({
+                                        ...prev,
+                                        [section.id]: { ...(prev[section.id] || {}), [key]: event.target.value },
+                                      }))}
+                                      style={{ width: key === 'max_daily_loss' ? '5.5rem' : '3.2rem', padding: '0.15rem 0.3rem', fontSize: '0.7rem' }}
+                                    />
+                                  </label>
+                                ))}
+                                <button
+                                  type="button"
+                                  disabled={familyLimitsBusy === section.id}
+                                  onClick={() => applyFamilyLimits(section)}
+                                  style={{ fontSize: '0.65rem', padding: '0.2rem 0.45rem' }}
+                                >
+                                  {familyLimitsBusy === section.id ? 'Saving' : 'Apply'}
+                                </button>
                                 <MiniToggle
                                   checked={allLive}
                                   onChange={() => setFamilyLive(section.strategies, !allLive)}

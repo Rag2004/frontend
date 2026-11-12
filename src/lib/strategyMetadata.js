@@ -1,5 +1,5 @@
 import { clockBookDesk } from './clockBookDesk';
-import { SN_S275_DESK } from './snS275Desk';
+import { NF_PEN_12_DESK, NF_TGT_PEN12_DESK, NF_TR_PEN_12_DESK, SN_PEN_12_DESK, SN_TGT_PEN12_DESK, SN_TR_PEN12_DESK } from './snS275Desk';
 
 /** Shared static schedule metadata; backend strategy IDs remain unchanged. */
 
@@ -22,7 +22,12 @@ export const STRATEGY_METADATA = {
   NF_S310_V1: { entry: '10:00' },
   NF_S0_10: { entry: '09:16' },
   GL_1: { entry: '09:16' },
-  ...SN_S275_DESK,
+  ...SN_PEN_12_DESK,
+  ...NF_PEN_12_DESK,
+  ...SN_TGT_PEN12_DESK,
+  ...NF_TGT_PEN12_DESK,
+  ...SN_TR_PEN12_DESK,
+  ...NF_TR_PEN_12_DESK,
   ...clockBookDesk('NF_S90', '15:23'),
   ...clockBookDesk('SN_275', '15:23'),
 };
