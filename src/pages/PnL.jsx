@@ -12,6 +12,7 @@ import { Skeleton } from '../components/ui/Skeleton';
 import { useApiPoll } from '../hooks/useApiPoll';
 import { positionLegRowClass } from '../lib/positionLeg';
 import { getStrategyDisplayName, strategyMatchesSearch } from '../lib/strategyDisplayNames';
+import { groupPnlFamilies } from '../lib/pnlFamilies';
 import {
   NF_S0_10_ID,
   NF_S0_10_WAVES,
@@ -71,6 +72,7 @@ export default function PnL() {
   const [rmsStrategies, setRmsStrategies] = useState({});
   const [positions, setPositions] = useState([]);
   const [selectedStrategy, setSelectedStrategy] = useState(null);
+  const [expandedFamilies, setExpandedFamilies] = useState(() => new Set());
   const [pnlError, setPnlError] = useState(null);
   const [loadingSlow, setLoadingSlow] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
@@ -421,6 +423,21 @@ export default function PnL() {
     return rows;
   }, [enrichedStrategyRows, tableSearch, includedStrategyIds]);
 
+  const familyRows = useMemo(() => groupPnlFamilies(filteredStrategyRows), [filteredStrategyRows]);
+
+  const toggleFamily = useCallback((row) => {
+    const open = expandedFamilies.has(row.familyId);
+    setExpandedFamilies((prev) => {
+      const next = new Set(prev);
+      if (open) next.delete(row.familyId);
+      else next.add(row.familyId);
+      return next;
+    });
+    if (open && row.members?.some((member) => member.strategy_id === selectedStrategy)) {
+      setSelectedStrategy(null);
+    }
+  }, [expandedFamilies, selectedStrategy]);
+
   const filteredFooterSums = useMemo(() => {
     let realized = 0;
     let unrealized = 0;
@@ -497,7 +514,15 @@ export default function PnL() {
       {
         accessorKey: 'strategy_id',
         header: 'Strategy',
-        cell: ({ getValue }) => <span className="strategy-name font-medium">{cleanName(getValue())}</span>,
+        cell: ({ row }) => {
+          const original = row.original;
+          const label = original.rowKind === 'family' ? original.familyId : cleanName(original.strategy_id);
+          return (
+            <span className={cn('strategy-name font-medium', original.rowKind === 'member' && 'pl-4')}>
+              {label}
+            </span>
+          );
+        },
       },
       {
         id: 'symbol',
@@ -533,18 +558,24 @@ export default function PnL() {
         id: '_expand',
         enableSorting: false,
         header: '',
-        cell: ({ row }) => (
-          <ChevronRight
-            className={cn(
-              'h-4 w-4 shrink-0 text-desk-muted transition-transform duration-150',
-              selectedStrategy === row.original.strategy_id && 'rotate-90 text-[color:var(--accent)]'
-            )}
-            aria-hidden
-          />
-        ),
+        cell: ({ row }) => {
+          const original = row.original;
+          const open = original.rowKind === 'family'
+            ? expandedFamilies.has(original.familyId)
+            : selectedStrategy === original.strategy_id;
+          return (
+            <ChevronRight
+              className={cn(
+                'h-4 w-4 shrink-0 text-desk-muted transition-transform duration-150',
+                open && 'rotate-90 text-[color:var(--accent)]'
+              )}
+              aria-hidden
+            />
+          );
+        },
       },
     ],
-    [selectedStrategy]
+    [selectedStrategy, expandedFamilies]
   );
 
   const positionsForStrategy = selectedStrategy
@@ -863,15 +894,20 @@ export default function PnL() {
 
           <div className="pnl-table-shell">
             <DeskTable
-              data={filteredStrategyRows}
+              data={familyRows}
               columns={strategyColumns}
               getRowId={(row) => row.strategy_id}
               initialSorting={PNL_STRATEGY_TABLE_SORT}
               density="default"
               emptyTitle={strategyRows.length === 0 ? 'No PnL data yet' : 'No strategies match filters'}
-              onRowClick={(row) =>
-                setSelectedStrategy((prev) => (prev === row.strategy_id ? null : row.strategy_id))
-              }
+              subRowsFor={(row) => (row.rowKind === 'family' && expandedFamilies.has(row.familyId) ? row.members : [])}
+              onRowClick={(row) => {
+                if (row.rowKind === 'family') {
+                  toggleFamily(row);
+                  return;
+                }
+                setSelectedStrategy((prev) => (prev === row.strategy_id ? null : row.strategy_id));
+              }}
               getRowClassName={(row) => (selectedStrategy === row.strategy_id ? 'selected' : '')}
               footer={
                 filteredStrategyRows.length > 0 ? (

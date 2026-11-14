@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import {
   useReactTable,
   getCoreRowModel,
@@ -26,6 +26,8 @@ export function DeskTable({
   initialSorting = [],
   density = 'default',
   tableClassName = '',
+  /** Extra rows drawn under a parent. They stay put when the parent rows are sorted. */
+  subRowsFor,
 }) {
   const [sorting, setSorting] = useState(initialSorting);
 
@@ -43,6 +45,31 @@ export function DeskTable({
 
   const rowPad = density === 'comfortable' ? 'py-2.5' : 'py-2';
   const cellText = 'text-sm';
+
+  const cellValue = (column, original) => {
+    const def = column.columnDef;
+    if (typeof def.accessorFn === 'function') return def.accessorFn(original, 0);
+    if (def.accessorKey) return original[def.accessorKey];
+    return undefined;
+  };
+
+  const renderCells = (original) =>
+    table.getVisibleLeafColumns().map((column) => (
+      <td
+        key={column.id}
+        className={
+          column.columnDef.meta?.numeric
+            ? `border-b border-desk-border px-3 ${rowPad} text-right font-mono tabular-nums text-desk-text ${cellText}`
+            : `border-b border-desk-border px-3 ${rowPad} font-sans ${cellText} text-desk-text`
+        }
+      >
+        {flexRender(column.columnDef.cell, {
+          getValue: () => cellValue(column, original),
+          row: { original, id: getRowId?.(original) ?? original.strategy_id },
+          column,
+        })}
+      </td>
+    ));
 
   if (!data?.length) {
     return (
@@ -84,27 +111,31 @@ export function DeskTable({
           ))}
         </thead>
         <tbody>
-          {rows.map((row, idx) => (
-            <tr
-              key={row.id}
-              className={`h-10 ${idx % 2 === 1 ? 'bg-white/[0.02]' : ''} ${onRowClick ? 'cursor-pointer transition-colors duration-150 hover:bg-white/5' : ''} ${getRowClassName?.(row.original) ?? ''}`}
-              onClick={onRowClick ? () => onRowClick(row.original) : undefined}
-              role={onRowClick ? 'button' : undefined}
-            >
-              {row.getVisibleCells().map((cell) => (
-                <td
-                  key={cell.id}
-                  className={
-                    cell.column.columnDef.meta?.numeric
-                      ? `border-b border-desk-border px-3 ${rowPad} text-right font-mono tabular-nums text-desk-text ${cellText}`
-                      : `border-b border-desk-border px-3 ${rowPad} font-sans ${cellText} text-desk-text`
-                  }
+          {rows.map((row, idx) => {
+            const subs = subRowsFor?.(row.original) ?? [];
+            const rowClass = `h-10 ${idx % 2 === 1 ? 'bg-white/[0.02]' : ''} ${onRowClick ? 'cursor-pointer transition-colors duration-150 hover:bg-white/5' : ''}`;
+            return (
+              <Fragment key={row.id}>
+                <tr
+                  className={`${rowClass} ${getRowClassName?.(row.original) ?? ''}`}
+                  onClick={onRowClick ? () => onRowClick(row.original) : undefined}
+                  role={onRowClick ? 'button' : undefined}
                 >
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </td>
-              ))}
-            </tr>
-          ))}
+                  {renderCells(row.original)}
+                </tr>
+                {subs.map((sub) => (
+                  <tr
+                    key={getRowId?.(sub) ?? sub.strategy_id}
+                    className={`${rowClass} bg-white/[0.03] ${getRowClassName?.(sub) ?? ''}`}
+                    onClick={onRowClick ? () => onRowClick(sub) : undefined}
+                    role={onRowClick ? 'button' : undefined}
+                  >
+                    {renderCells(sub)}
+                  </tr>
+                ))}
+              </Fragment>
+            );
+          })}
         </tbody>
         {footer ? <tfoot>{footer}</tfoot> : null}
       </DataTable>
