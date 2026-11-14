@@ -20,6 +20,25 @@ import {
 import { baseCapitalDeployed, marginPerLotForSection } from '../lib/baseCapital';
 
 const SETUP_MATRIX_COL_COUNT = 13;
+const OPEN_SECTIONS_KEY = 'setupRisk.openSections';
+
+function readOpenSections() {
+  try {
+    const raw = window.localStorage.getItem(OPEN_SECTIONS_KEY);
+    const ids = raw ? JSON.parse(raw) : [];
+    return new Set(Array.isArray(ids) ? ids.filter((id) => typeof id === 'string') : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function writeOpenSections(ids) {
+  try {
+    window.localStorage.setItem(OPEN_SECTIONS_KEY, JSON.stringify([...ids]));
+  } catch {
+    /* private mode or a full store — the open set still works for this visit */
+  }
+}
 
 /** Qty per 1 lot — prefer /api/symbols row; else NIFTY=65, SENSEX=20 (matches Backend). */
 const getContractMultiplier = (underlyingScrip, symbolList) => {
@@ -91,7 +110,7 @@ export default function SetupAndRisk() {
   const [decisionFilter, setDecisionFilter] = useState('ALL');
   const [decisionSearch, setDecisionSearch] = useState('');
   const [dteFilter, setDteFilter] = useState(DTE_FILTERS.ALL);
-  const [collapsedDteSections, setCollapsedDteSections] = useState(() => new Set());
+  const [openSections, setOpenSections] = useState(readOpenSections);
   const [lotSizes, setLotSizes] = useState({});  // strategyId -> lot (for live qty update)
   const [symbols, setSymbols] = useState([]);
   const [rerunBusyById, setRerunBusyById] = useState({});
@@ -102,15 +121,12 @@ export default function SetupAndRisk() {
   const decisionIntervalRef = useRef(null);
   const { strategyWorkerOk, strategyWorkerStatus } = useDeskShell();
 
-  useEffect(() => {
-    setCollapsedDteSections(new Set());
-  }, [dteFilter]);
-
   const toggleDteSection = useCallback((sectionId) => {
-    setCollapsedDteSections((prev) => {
+    setOpenSections((prev) => {
       const next = new Set(prev);
       if (next.has(sectionId)) next.delete(sectionId);
       else next.add(sectionId);
+      writeOpenSections(next);
       return next;
     });
   }, []);
@@ -531,6 +547,9 @@ export default function SetupAndRisk() {
     () => buildSetupDteSections(visibleStrategies, dteFilter),
     [visibleStrategies, dteFilter],
   );
+  const anySectionOpen = dteSections.some(
+    (section) => section.collapsible === false || openSections.has(section.id),
+  );
 
   const renderStrategyRow = (s, sectionId) => {
     const underlying = Number((s.bc?.underlying_scrip) ?? 13);
@@ -675,15 +694,6 @@ export default function SetupAndRisk() {
         <div style={{ padding: '0.35rem 0.65rem', background: 'rgba(63,185,80,0.08)', border: '1px solid rgba(63,185,80,0.3)', borderRadius: 3, fontSize: '0.72rem', color: 'var(--positive)', fontFamily: 'var(--mono)' }}>{success}</div>
       )}
 
-      {/* Instruction strip */}
-      <div style={{
-        padding: '0.5rem 0.85rem', background: 'rgba(57,197,207,0.05)', border: '1px solid rgba(57,197,207,0.2)',
-        borderRadius: 4, fontSize: '0.75rem', lineHeight: 1.5, fontFamily: 'var(--mono)',
-      }}>
-        <Mono color="var(--accent-cyan)">▶ TO START:</Mono>{' '}
-        <Mono color="var(--text-muted)">Backend ON + RMS Code ON + RMS Orders ON — all three required for execution</Mono>
-      </div>
-
       {/* Strategy matrix: config + risk in one table */}
       <div className="card" style={{ padding: 0, overflow: 'hidden', borderRadius: 4 }}>
         <PanelHeader icon="◉" title="STRATEGIES — Setup & Risk">
@@ -708,6 +718,7 @@ export default function SetupAndRisk() {
         </PanelHeader>
         <div style={{ overflowX: 'auto' }}>
           <table className="setup-matrix-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
+            {anySectionOpen && (
             <thead>
               <tr style={{ background: 'rgba(0,0,0,0.25)' }}>
                 <th style={thStyle}>STRATEGY</th>
@@ -725,6 +736,7 @@ export default function SetupAndRisk() {
                 <th style={{ ...thStyle, textAlign: 'center' }}>ACTIONS</th>
               </tr>
             </thead>
+            )}
             {visibleStrategies.length === 0 ? (
               <tbody>
                 <tr>
@@ -737,7 +749,7 @@ export default function SetupAndRisk() {
               dteSections.flatMap((section) => {
                 const bodyId = `setup-dte-section-${section.id}`;
                 const collapsible = section.collapsible !== false;
-                const collapsed = collapsible && collapsedDteSections.has(section.id);
+                const collapsed = collapsible && !openSections.has(section.id);
                 const count = section.strategies.length;
                 const blocks = [];
                 if (collapsible) {
@@ -776,15 +788,15 @@ export default function SetupAndRisk() {
                                   {count} strateg{count === 1 ? 'y' : 'ies'}
                                 </span>
                               )}
+                              <span className="setup-dte-section__live" style={{ marginLeft: '0.45rem' }}>
+                                {section.familyToggle ? `${section.liveCount}/${count} live` : `${section.liveCount} live`}
+                              </span>
                             </button>
-                            <span className="setup-dte-section__live">
-                              {section.familyToggle ? `${section.liveCount}/${count} live` : `${section.liveCount} live`}
-                            </span>
                             {section.familyToggle && (
                               <span
                                 onClick={(event) => event.stopPropagation()}
                                 onKeyDown={(event) => event.stopPropagation()}
-                                style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', flexWrap: 'wrap' }}
+                                style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '0.35rem', flexWrap: 'nowrap', flexShrink: 0 }}
                               >
                                 {[
                                   ['lot_size', 'Lots', '1'],
