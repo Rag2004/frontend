@@ -23,6 +23,7 @@ const Mono = ({ children, color, size = '0.85rem' }) => (
 export default function MTMChart({
     embedded = false,
     strategyFilter = null,
+    strategyIds = null,
     date: dateProp = null,
 }) {
     const [chartData, setChartData] = useState([]);
@@ -36,6 +37,11 @@ export default function MTMChart({
     const [indexFilter, setIndexFilter] = useState(INDEX_FILTERS.ALL);
     const [strategyUnderlyingById, setStrategyUnderlyingById] = useState({});
     const dateControlled = dateProp != null;
+    const lockedIds = useMemo(() => {
+        if (strategyFilter) return [strategyFilter];
+        if (Array.isArray(strategyIds) && strategyIds.length) return strategyIds;
+        return null;
+    }, [strategyFilter, strategyIds]);
 
     useEffect(() => {
         if (dateControlled) setDate(dateProp);
@@ -78,8 +84,8 @@ export default function MTMChart({
                 setStrategies(stratArr);
                 setUnderlyingKeys(Array.from(ulKeySet));
                 setUnderlyingNames(ulNames);
-                if (strategyFilter) {
-                    setSelectedStrats(new Set([strategyFilter]));
+                if (lockedIds) {
+                    setSelectedStrats(new Set(lockedIds));
                 } else if (selectedStrats.size === 0 && stratArr.length > 0) {
                     setSelectedStrats(new Set(stratArr));
                 }
@@ -87,7 +93,7 @@ export default function MTMChart({
                 setLoading(false);
             })
             .catch(() => setLoading(false));
-    }, [date, strategyFilter]);
+    }, [date, lockedIds]);
 
     useEffect(() => { loadChart(); }, [loadChart]);
     // Auto-refresh every 10s during market hours
@@ -110,10 +116,12 @@ export default function MTMChart({
         }
     }, [strategyFilter, strategyUnderlyingById]);
 
-    const visibleStrategies = useMemo(
-        () => strategies.filter((sid) => strategyMatchesIndex(sid, indexFilter, strategyUnderlyingById)),
-        [strategies, indexFilter, strategyUnderlyingById]
-    );
+    const visibleStrategies = useMemo(() => {
+        const matched = strategies.filter((sid) => strategyMatchesIndex(sid, indexFilter, strategyUnderlyingById));
+        if (!lockedIds) return matched;
+        const allow = new Set(lockedIds);
+        return matched.filter((sid) => allow.has(sid));
+    }, [strategies, indexFilter, strategyUnderlyingById, lockedIds]);
 
     const visibleUnderlyingKeys = useMemo(() => {
         if (indexFilter === INDEX_FILTERS.NIFTY) return underlyingKeys.filter((k) => Number(k) === NIFTY_SCRIP);
@@ -122,13 +130,17 @@ export default function MTMChart({
     }, [underlyingKeys, indexFilter]);
 
     const filteredChartData = useMemo(() => {
-        if (indexFilter === INDEX_FILTERS.ALL) return chartData;
+        const restrict = Boolean(lockedIds) || indexFilter !== INDEX_FILTERS.ALL;
+        if (!restrict) return chartData;
+        const ids = lockedIds
+            ? visibleStrategies.filter((sid) => selectedStrats.has(sid))
+            : visibleStrategies;
         return chartData.map((row) => {
             let total = 0;
-            for (const sid of visibleStrategies) total += Number(row[`strat_${sid}`] || 0);
+            for (const sid of ids) total += Number(row[`strat_${sid}`] || 0);
             return { ...row, filtered_total_mtm: total };
         });
-    }, [chartData, indexFilter, visibleStrategies]);
+    }, [chartData, indexFilter, visibleStrategies, lockedIds, selectedStrats]);
 
     useEffect(() => {
         if (strategyFilter) {
@@ -260,9 +272,9 @@ export default function MTMChart({
                             <Area
                                 yAxisId="mtm"
                                 type="monotone"
-                                dataKey={strategyFilter ? `strat_${strategyFilter}` : (indexFilter === INDEX_FILTERS.ALL ? 'total_mtm' : 'filtered_total_mtm')}
+                                dataKey={strategyFilter ? `strat_${strategyFilter}` : ((lockedIds || indexFilter !== INDEX_FILTERS.ALL) ? 'filtered_total_mtm' : 'total_mtm')}
                                 stroke="#22d3ee" fill="rgba(34,211,238,0.08)"
-                                strokeWidth={2} name={strategyFilter ? `${cleanName(strategyFilter)} MTM` : 'Total MTM'} dot={false}
+                                strokeWidth={2} name={strategyFilter ? `${cleanName(strategyFilter)} MTM` : (lockedIds ? 'Portfolio MTM' : 'Total MTM')} dot={false}
                             />
 
                             {/* Per-strategy lines */}

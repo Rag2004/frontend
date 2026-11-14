@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, NavLink, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { Settings, Activity, LayoutGrid, IndianRupee, SlidersHorizontal, KeyRound, PlusCircle, CalendarDays, LogOut, PieChart } from 'lucide-react';
+import { Settings, Activity, LayoutGrid, IndianRupee, KeyRound, PlusCircle, CalendarDays, LogOut, PieChart } from 'lucide-react';
 import SetupAndRisk from './pages/SetupAndRisk';
 import ManualTrade from './pages/ManualTrade';
 import Orders from './pages/Orders';
@@ -13,7 +13,7 @@ import DhanAccount from './pages/DhanAccount';
 import KotakAccount from './pages/KotakAccount';
 import Login from './pages/Login';
 import SetupUnlock from './pages/SetupUnlock';
-import { isBrokerReconciliationDesk } from './config/deskProfile';
+import { deskSessionTitle, isBrokerReconciliationDesk } from './config/deskProfile';
 import { DeskShellProvider, useDeskShell } from './context/DeskShellContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { GlobalAlertStrip } from './components/GlobalAlertStrip';
@@ -51,8 +51,6 @@ function formatSyncTime(d) {
     return '';
   }
 }
-
-const envBadge = import.meta.env.VITE_DESK_ENV || import.meta.env.MODE || 'dev';
 
 /** React Router: leading slash, no trailing slash (Vite BASE_URL ends with /). */
 function routerBasename() {
@@ -203,15 +201,7 @@ function AppShell() {
       <div className="workspace">
         <header className="top-bar top-bar--desk">
           <div className="top-bar-left">
-            <span className="top-bar-label">Session</span>
-            <span className="top-bar-title">Trading desk</span>
-            <span
-              className="ml-2 rounded-desk-sm border border-desk-border px-1.5 py-0.5 font-mono text-[0.58rem] uppercase tracking-wider text-desk-muted"
-              title="Set VITE_DESK_ENV in .env for LIVE/PAPER/DEV"
-            >
-              <SlidersHorizontal className="mr-0.5 inline h-3 w-3" aria-hidden />
-              {String(envBadge)}
-            </span>
+            <span className="top-bar-title">{deskSessionTitle()}</span>
           </div>
           <div className="top-bar-center">
             <span className="clock-label">IST</span>

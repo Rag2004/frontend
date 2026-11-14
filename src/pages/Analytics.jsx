@@ -19,6 +19,7 @@ import MTMChart from '../components/MTMChart';
 import { API } from '../config/deskApi';
 
 import { getStrategyDisplayName as cleanName } from '../lib/strategyDisplayNames';
+import { listClockFamilies } from '../lib/pnlFamilies';
 
 function ymToString(year, month) {
   return `${year}-${String(month + 1).padStart(2, '0')}`;
@@ -66,6 +67,33 @@ function fmtPct(v, digits = 2) {
 function fmtRatio(v, digits = 2) {
   if (v == null || Number.isNaN(v)) return '—';
   return `${v.toFixed(digits)}\u00D7`;
+}
+
+function sumPortfolioDay(rows) {
+  const num = (row, key) => Number(row?.[key]) || 0;
+  const grossWin = rows.reduce((total, row) => total + num(row, 'gross_win'), 0);
+  const grossLoss = rows.reduce((total, row) => total + num(row, 'gross_loss'), 0);
+  const wins = rows.reduce((total, row) => total + num(row, 'wins_count'), 0);
+  const losses = rows.reduce((total, row) => total + num(row, 'losses_count'), 0);
+  const trades = rows.reduce((total, row) => total + num(row, 'trades_count'), 0);
+  const capital = rows.reduce((total, row) => total + num(row, 'capital_used_peak'), 0);
+  const avgWin = wins ? grossWin / wins : null;
+  const avgLoss = losses ? grossLoss / losses : null;
+  return {
+    capital_used_peak: capital || null,
+    capital_used_kind: 'lots_x_margin',
+    gross_pnl: rows.reduce((total, row) => total + num(row, 'gross_pnl'), 0),
+    charges_total: rows.reduce((total, row) => total + num(row, 'charges_total'), 0),
+    net_pnl: rows.reduce((total, row) => total + num(row, 'net_pnl'), 0),
+    trades_count: trades,
+    wins_count: wins,
+    losses_count: losses,
+    win_rate: trades ? wins / trades : null,
+    avg_win: avgWin,
+    avg_loss: avgLoss,
+    payoff_ratio: avgWin != null && avgLoss ? avgWin / Math.abs(avgLoss) : null,
+    status: rows.some((row) => row.status === 'provisional') ? 'provisional' : 'final',
+  };
 }
 
 function pnlColor(v) {
@@ -169,6 +197,7 @@ export default function Analytics() {
   const [customTo, setCustomTo] = useState(() => todayISTDateStr());
   const [scope, setScope] = useState('overall');
   const [strategyId, setStrategyId] = useState('');
+  const [portfolioId, setPortfolioId] = useState('');
   const [strategies, setStrategies] = useState([]);
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
@@ -206,7 +235,7 @@ export default function Analytics() {
   }, []);
 
   const loadPeriod = useCallback(() => {
-    if (scope === 'strategy' && !strategyId.trim()) {
+    if ((scope === 'strategy' && !strategyId.trim()) || (scope === 'portfolio' && !portfolioId.trim())) {
       setLoading(false);
       setError(null);
       setData(null);
@@ -232,6 +261,7 @@ export default function Analytics() {
       params.set('month', monthStr);
     }
     if (scope === 'strategy' && strategyId) params.set('strategy_id', strategyId);
+    if (scope === 'portfolio' && portfolioId) params.set('strategy_id', portfolioId);
     fetch(`${API}/analytics/pnl?${params}`)
       .then((r) => {
         if (!r.ok) throw new Error(`Analytics API ${r.status}`);
@@ -240,7 +270,7 @@ export default function Analytics() {
       .then((d) => setData(d))
       .catch((e) => setError(e.message || 'Failed to load analytics'))
       .finally(() => setLoading(false));
-  }, [monthStr, scope, strategyId, broker, isCustomRange, customFrom, customTo]);
+  }, [monthStr, scope, strategyId, portfolioId, broker, isCustomRange, customFrom, customTo]);
 
   useEffect(() => {
     loadPeriod();
@@ -251,13 +281,14 @@ export default function Analytics() {
   }, [loadBrokerCharges]);
 
   useEffect(() => {
-    if (scope === 'strategy' && !strategyId.trim()) {
+    if ((scope === 'strategy' && !strategyId.trim()) || (scope === 'portfolio' && !portfolioId.trim())) {
       setMonthsAvg(null);
       return undefined;
     }
     let alive = true;
     const params = new URLSearchParams({ months: '12', scope, broker });
     if (scope === 'strategy' && strategyId) params.set('strategy_id', strategyId);
+    if (scope === 'portfolio' && portfolioId) params.set('strategy_id', portfolioId);
     fetch(`${API}/analytics/months?${params}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((j) => {
@@ -269,7 +300,7 @@ export default function Analytics() {
     return () => {
       alive = false;
     };
-  }, [scope, strategyId, broker]);
+  }, [scope, strategyId, portfolioId, broker]);
 
   useEffect(() => {
     fetch(`${API}/strategies`)
@@ -297,10 +328,23 @@ export default function Analytics() {
     };
   }, [selectedDate, broker]);
 
+  const portfolioChoices = useMemo(() => listClockFamilies(strategies), [strategies]);
+  const portfolioMembers = useMemo(() => {
+    const found = portfolioChoices.find((item) => item.id === portfolioId);
+    return found?.members || [];
+  }, [portfolioChoices, portfolioId]);
   const sortedDayStrategies = useMemo(() => {
-    const rows = dayDetail?.strategies || [];
+    let rows = dayDetail?.strategies || [];
+    if (scope === 'portfolio') {
+      const allow = new Set(portfolioMembers);
+      rows = rows.filter((row) => allow.has(row.strategy_id));
+    }
     return [...rows].sort((a, b) => Math.abs(b?.net_pnl || 0) - Math.abs(a?.net_pnl || 0));
-  }, [dayDetail]);
+  }, [dayDetail, scope, portfolioMembers]);
+  const dayFooter = useMemo(() => {
+    if (scope === 'portfolio') return sortedDayStrategies.length ? sumPortfolioDay(sortedDayStrategies) : null;
+    return dayDetail?.overall || null;
+  }, [scope, sortedDayStrategies, dayDetail]);
 
   const savePerTrade = async () => {
     const n = Number(perTradeDraft);
@@ -380,7 +424,11 @@ export default function Analytics() {
   const goNext = () => setYm(({ y: yy, m: mm }) => (mm === 11 ? { y: yy + 1, m: 0 } : { y: yy, m: mm + 1 }));
 
   const summary = data?.summary;
-  const scopeLabel = useMemo(() => (scope === 'strategy' ? cleanName(strategyId) || 'Strategy' : 'Overall'), [scope, strategyId]);
+  const scopeLabel = useMemo(() => {
+    if (scope === 'strategy') return cleanName(strategyId) || 'Strategy';
+    if (scope === 'portfolio') return portfolioId || 'Portfolio';
+    return 'Overall';
+  }, [scope, strategyId, portfolioId]);
 
   return (
     <div className="card pnl-page pnl-page--inst">
@@ -399,12 +447,34 @@ export default function Analytics() {
             </button>
             <button
               type="button"
+              className={scope === 'portfolio' ? 'active' : ''}
+              onClick={() => setScope('portfolio')}
+            >
+              Portfolio
+            </button>
+            <button
+              type="button"
               className={scope === 'strategy' ? 'active' : ''}
               onClick={() => setScope('strategy')}
             >
               Per strategy
             </button>
           </div>
+          {scope === 'portfolio' && (
+            <select
+              className="rounded-desk-sm border border-desk-border bg-desk-panel px-2 py-1 text-xs text-desk-text"
+              value={portfolioId}
+              onChange={(e) => setPortfolioId(e.target.value)}
+              aria-label="Portfolio"
+            >
+              <option value="">Select portfolio...</option>
+              {portfolioChoices.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.id}
+                </option>
+              ))}
+            </select>
+          )}
           {scope === 'strategy' && (
             <select
               className="rounded-desk-sm border border-desk-border bg-desk-panel px-2 py-1 text-xs text-desk-text"
@@ -602,15 +672,15 @@ export default function Analytics() {
               <div
                 className="qd-kpi-tile"
                 title={
-                  scope === 'strategy'
+                  scope === 'strategy' || scope === 'portfolio'
                     ? 'Avg daily peak lots × ₹1.8L margin per lot'
                     : 'Account-wide peak margin from broker fundlimit'
                 }
               >
-                <div className="qd-kpi-tile__label">{scope === 'strategy' ? 'Est. margin (avg lots × ₹1.8L)' : 'Peak Margin'}</div>
+                <div className="qd-kpi-tile__label">{scope === 'strategy' || scope === 'portfolio' ? 'Est. margin (avg lots × ₹1.8L)' : 'Peak Margin'}</div>
                 <div className="qd-kpi-tile__value text-desk-text">{fmtCompactINR(summary?.peak_margin)}</div>
                 <div className="qd-kpi-tile__sub">
-                  {scope === 'strategy'
+                  {scope === 'strategy' || scope === 'portfolio'
                     ? (summary?.avg_lots != null ? `avg ${Number(summary.avg_lots).toFixed(2)} lots` : 'lots × ₹1.8L')
                     : 'capital used'}
                 </div>
@@ -755,6 +825,11 @@ export default function Analytics() {
       {scope === 'strategy' && !strategyId.trim() && (
         <p className="mb-2 rounded-desk-sm border border-amber-500/40 bg-amber-500/10 px-3 py-2 font-mono text-[0.65rem] text-amber-200">
           Choose a strategy from the dropdown to load {periodLabel} (overall totals use the other tab).
+        </p>
+      )}
+      {scope === 'portfolio' && !portfolioId.trim() && (
+        <p className="mb-2 rounded-desk-sm border border-amber-500/40 bg-amber-500/10 px-3 py-2 font-mono text-[0.65rem] text-amber-200">
+          Choose a portfolio such as NF_PEN_12. That rolls up every tranche in the family.
         </p>
       )}
 
@@ -966,12 +1041,12 @@ export default function Analytics() {
           <div className="open-positions-header">
             <h3>
               {selectedDate}
-              {dayDetail?.overall?.status === 'provisional' && selectedDate === istTodayStr && (
+              {dayFooter?.status === 'provisional' && selectedDate === istTodayStr && (
                 <span className="ml-2 rounded px-1.5 py-0.5 text-[0.6rem] font-semibold uppercase tracking-wider bg-amber-500/20 text-amber-300">
                   Provisional
                 </span>
               )}
-              {(dayDetail?.overall?.status === 'final' || selectedDate !== istTodayStr) && dayDetail?.overall && (
+              {(dayFooter?.status === 'final' || selectedDate !== istTodayStr) && dayFooter && (
                 <span className="ml-2 rounded px-1.5 py-0.5 text-[0.6rem] font-semibold uppercase tracking-wider bg-emerald-500/20 text-emerald-300">
                   Final
                 </span>
@@ -983,7 +1058,7 @@ export default function Analytics() {
               </button>
             </div>
           </div>
-          {dayDetail?.overall ? (
+          {dayFooter ? (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="text-left text-[0.7rem] uppercase tracking-wider text-desk-muted">
@@ -1055,41 +1130,41 @@ export default function Analytics() {
                     </tr>
                   ))}
                   <tr className="border-t-2 border-desk-border bg-black/30 qd-table-overall">
-                    <td className="px-3 py-2 font-bold">Overall</td>
+                    <td className="px-3 py-2 font-bold">{scope === 'portfolio' ? (portfolioId || 'Portfolio') : 'Overall'}</td>
                     <td
                       className="px-3 py-2 text-right font-mono tabular-nums"
                       title={
-                        dayDetail.overall.capital_used_kind === 'broker_margin'
+                        dayFooter.capital_used_kind === 'broker_margin'
                           ? 'Account-wide peak margin from broker fundlimit'
-                          : undefined
+                          : 'Sum of tranche peak lots × ₹1.8L'
                       }
                     >
-                      {dayDetail.overall.capital_used_peak != null
-                        ? fmtCompactINR(dayDetail.overall.capital_used_peak)
+                      {dayFooter.capital_used_peak != null
+                        ? fmtCompactINR(dayFooter.capital_used_peak)
                         : '—'}
                     </td>
-                    <td className={`px-3 py-2 text-right font-mono tabular-nums font-bold ${pnlColor(dayDetail.overall.gross_pnl)}`}>
-                      {fmtINR(dayDetail.overall.gross_pnl)}
+                    <td className={`px-3 py-2 text-right font-mono tabular-nums font-bold ${pnlColor(dayFooter.gross_pnl)}`}>
+                      {fmtINR(dayFooter.gross_pnl)}
                     </td>
-                    <td className="px-3 py-2 text-right font-mono tabular-nums">{fmtINR(dayDetail.overall.charges_total)}</td>
-                    <td className={`px-3 py-2 text-right font-mono tabular-nums font-bold ${pnlColor(dayDetail.overall.net_pnl)}`}>
-                      {fmtINR(dayDetail.overall.net_pnl)}
+                    <td className="px-3 py-2 text-right font-mono tabular-nums">{fmtINR(dayFooter.charges_total)}</td>
+                    <td className={`px-3 py-2 text-right font-mono tabular-nums font-bold ${pnlColor(dayFooter.net_pnl)}`}>
+                      {fmtINR(dayFooter.net_pnl)}
                     </td>
-                    <td className="px-3 py-2 text-right font-mono tabular-nums">{dayDetail.overall.trades_count || 0}</td>
+                    <td className="px-3 py-2 text-right font-mono tabular-nums">{dayFooter.trades_count || 0}</td>
                     <td className="px-3 py-2 text-right font-mono tabular-nums text-desk-muted">
-                      {(dayDetail.overall.wins_count || 0)}/{(dayDetail.overall.losses_count || 0)}
+                      {(dayFooter.wins_count || 0)}/{(dayFooter.losses_count || 0)}
                     </td>
                     <td className="px-3 py-2 text-right font-mono tabular-nums">
-                      {dayDetail.overall.win_rate != null ? fmtPct(dayDetail.overall.win_rate * 100) : '—'}
+                      {dayFooter.win_rate != null ? fmtPct(dayFooter.win_rate * 100) : '—'}
                     </td>
-                    <td className={`px-3 py-2 text-right font-mono tabular-nums ${pnlColor(dayDetail.overall.avg_win)}`}>
-                      {fmtINR(dayDetail.overall.avg_win)}
+                    <td className={`px-3 py-2 text-right font-mono tabular-nums ${pnlColor(dayFooter.avg_win)}`}>
+                      {fmtINR(dayFooter.avg_win)}
                     </td>
-                    <td className={`px-3 py-2 text-right font-mono tabular-nums ${pnlColor(dayDetail.overall.avg_loss)}`}>
-                      {fmtINR(dayDetail.overall.avg_loss)}
+                    <td className={`px-3 py-2 text-right font-mono tabular-nums ${pnlColor(dayFooter.avg_loss)}`}>
+                      {fmtINR(dayFooter.avg_loss)}
                     </td>
                     <td className="px-3 py-2 text-right font-mono tabular-nums">
-                      {fmtRatio(dayDetail.overall.payoff_ratio)}
+                      {fmtRatio(dayFooter.payoff_ratio)}
                     </td>
                   </tr>
                 </tbody>
@@ -1099,7 +1174,11 @@ export default function Analytics() {
             <p className="no-positions">No data for this day yet.</p>
           )}
           <div className="mt-4">
-            <MTMChart embedded date={selectedDate} />
+            <MTMChart
+              embedded
+              date={selectedDate}
+              strategyIds={scope === 'portfolio' ? portfolioMembers : null}
+            />
           </div>
         </section>
       )}

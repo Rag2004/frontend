@@ -51,6 +51,14 @@ export function getDeskBookConfig() {
 }
 
 
+/** Top-bar title. Broker builds are live; mock builds are mock; an unset profile follows the book. */
+export function deskSessionTitle() {
+  const { profile, broker } = getDeskBookConfig();
+  if (profile === 'mock') return 'Mock trading desk';
+  if (profile === 'broker') return 'Live trading desk';
+  return broker === 'mock' ? 'Mock trading desk' : 'Live trading desk';
+}
+
 export function isBrokerReconciliationDesk() {
   const profile = getDeskBookConfig().profile;
   return profile === 'broker' || profile === 'mock';

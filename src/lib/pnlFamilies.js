@@ -42,3 +42,22 @@ export function groupPnlFamilies(rows) {
   }
   return top;
 }
+
+/** Family prefixes that have at least two clock books. Members stay in tranche order. */
+export function listClockFamilies(strategyIds) {
+  const groups = new Map();
+  for (const id of strategyIds || []) {
+    const match = CLOCK_FAMILY.exec(String(id || ''));
+    if (!match) continue;
+    const family = match[1];
+    if (!groups.has(family)) groups.set(family, []);
+    groups.get(family).push({ id: String(id), index: Number(match[2]) });
+  }
+  return [...groups.entries()]
+    .filter(([, members]) => members.length >= 2)
+    .map(([id, members]) => ({
+      id,
+      members: members.sort((a, b) => a.index - b.index).map((member) => member.id),
+    }))
+    .sort((a, b) => a.id.localeCompare(b.id));
+}
