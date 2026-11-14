@@ -729,6 +729,15 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
   font: inherit;
   transition: background 0.12s;
 }
+.setup-matrix-table .setup-dte-section__header--group {
+  background: rgba(255, 255, 255, 0.045);
+  padding-top: 0.42rem;
+  padding-bottom: 0.42rem;
+  cursor: default;
+}
+.setup-matrix-table .setup-dte-section__header--nested {
+  padding-left: 1.7rem;
+}
 .setup-matrix-table .setup-dte-section__header:hover {
   background: rgba(255, 255, 255, 0.05);
 }

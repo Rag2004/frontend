@@ -15,7 +15,9 @@ import {
   DTE_FILTERS,
   DTE_FILTER_OPTIONS,
   buildSetupDteSections,
+  groupSetupVersions,
   strategyMatchesDteFilter,
+  uniqueSectionBooks,
 } from '../lib/strategyDteBuckets';
 import { baseCapitalDeployed, marginPerLotForSection } from '../lib/baseCapital';
 
@@ -547,9 +549,10 @@ export default function SetupAndRisk() {
     () => buildSetupDteSections(visibleStrategies, dteFilter),
     [visibleStrategies, dteFilter],
   );
-  const anySectionOpen = dteSections.some(
+  const setupGroups = useMemo(() => groupSetupVersions(dteSections), [dteSections]);
+  const anySectionOpen = setupGroups.some((group) => group.sections.some(
     (section) => section.collapsible === false || openSections.has(section.id),
-  );
+  ));
 
   const renderStrategyRow = (s, sectionId) => {
     const underlying = Number((s.bc?.underlying_scrip) ?? 13);
@@ -746,7 +749,29 @@ export default function SetupAndRisk() {
                 </tr>
               </tbody>
             ) : (
-              dteSections.flatMap((section) => {
+              setupGroups.flatMap((group) => {
+                const groupBooks = uniqueSectionBooks(group.sections);
+                const groupLive = groupBooks.filter((strategy) => strategy?.isTrading).length;
+                const rows = [(
+                  <tbody key={`${group.id}-header`}>
+                    <tr className="setup-dte-section__header-row">
+                      <td colSpan={SETUP_MATRIX_COL_COUNT} className="setup-dte-section__cell">
+                        <div className="setup-dte-section__header setup-dte-section__header--group">
+                          <div className="setup-dte-section__toggle">
+                            <span className="setup-dte-section__label">{group.label}</span>
+                            <span className="setup-dte-section__meta">
+                              {group.sections.length} section{group.sections.length === 1 ? '' : 's'}
+                            </span>
+                            <span className="setup-dte-section__live">
+                              {groupLive}/{groupBooks.length} live
+                            </span>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                )];
+                return rows.concat(group.sections.flatMap((section) => {
                 const bodyId = `setup-dte-section-${section.id}`;
                 const collapsible = section.collapsible !== false;
                 const collapsed = collapsible && !openSections.has(section.id);
@@ -758,7 +783,7 @@ export default function SetupAndRisk() {
                     <tbody key={`${section.id}-header`}>
                       <tr className="setup-dte-section__header-row">
                         <td colSpan={SETUP_MATRIX_COL_COUNT} className="setup-dte-section__cell">
-                          <div className="setup-dte-section__header">
+                          <div className="setup-dte-section__header setup-dte-section__header--nested">
                             <button
                               type="button"
                               className="setup-dte-section__toggle"
@@ -836,6 +861,7 @@ export default function SetupAndRisk() {
                   </tbody>,
                 );
                 return blocks;
+              }));
               })
             )}
           </table>

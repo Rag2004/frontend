@@ -172,3 +172,24 @@ export function buildSetupDteSections(strategies, activeFilter) {
   });
   return [...dteSections, ...families];
 }
+
+/** V1 is the DTE blocks. V2 is the PEN, 90, and 275 clock families. */
+export function groupSetupVersions(sections) {
+  const list = Array.isArray(sections) ? sections : [];
+  const v1 = list.filter((section) => !section.familyToggle);
+  const v2 = list.filter((section) => section.familyToggle);
+  const groups = [];
+  if (v1.length) groups.push({ id: 'v1', label: 'V1', sections: v1 });
+  if (v2.length) groups.push({ id: 'v2', label: 'V2', sections: v2 });
+  return groups;
+}
+
+export function uniqueSectionBooks(sections) {
+  const byId = new Map();
+  for (const section of sections || []) {
+    for (const strategy of section.strategies || []) {
+      if (strategy?.id && !byId.has(strategy.id)) byId.set(strategy.id, strategy);
+    }
+  }
+  return [...byId.values()];
+}
