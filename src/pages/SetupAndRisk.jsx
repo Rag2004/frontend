@@ -761,23 +761,11 @@ export default function SetupAndRisk() {
                           <div className="setup-dte-section__header">
                             <button
                               type="button"
+                              className="setup-dte-section__toggle"
                               onClick={() => toggleDteSection(section.id)}
                               aria-expanded={!collapsed}
                               aria-controls={bodyId}
                               id={`${bodyId}-toggle`}
-                              style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '0.5rem',
-                                flex: 1,
-                                background: 'transparent',
-                                border: 'none',
-                                color: 'inherit',
-                                font: 'inherit',
-                                cursor: 'pointer',
-                                textAlign: 'left',
-                                padding: 0,
-                              }}
                             >
                               <span className="setup-dte-section__chevron" aria-hidden="true">
                                 {collapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
@@ -788,15 +776,15 @@ export default function SetupAndRisk() {
                                   {count} strateg{count === 1 ? 'y' : 'ies'}
                                 </span>
                               )}
-                              <span className="setup-dte-section__live" style={{ marginLeft: '0.45rem' }}>
+                              <span className="setup-dte-section__live">
                                 {section.familyToggle ? `${section.liveCount}/${count} live` : `${section.liveCount} live`}
                               </span>
                             </button>
                             {section.familyToggle && (
                               <span
+                                className="setup-dte-section__controls"
                                 onClick={(event) => event.stopPropagation()}
                                 onKeyDown={(event) => event.stopPropagation()}
-                                style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '0.35rem', flexWrap: 'nowrap', flexShrink: 0 }}
                               >
                                 {[
                                   ['lot_size', 'Lots', '1'],
@@ -805,19 +793,19 @@ export default function SetupAndRisk() {
                                   ['max_trades_per_day', 'Trades', '50'],
                                   ['retry_wait_sec', 'Retry', '5'],
                                 ].map(([key, label, placeholder]) => (
-                                  <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.65rem', color: 'var(--text-muted)' }}>
+                                  <label key={key} className="setup-dte-section__field">
                                     {label}
                                     <input
                                       type="number"
                                       inputMode="decimal"
                                       placeholder={placeholder}
+                                      data-wide={key === 'max_daily_loss' ? 'true' : undefined}
                                       aria-label={`${section.label} ${label}`}
                                       value={familyForms[section.id]?.[key] ?? ''}
                                       onChange={(event) => setFamilyForms((prev) => ({
                                         ...prev,
                                         [section.id]: { ...(prev[section.id] || {}), [key]: event.target.value },
                                       }))}
-                                      style={{ width: key === 'max_daily_loss' ? '5.5rem' : '3.2rem', padding: '0.15rem 0.3rem', fontSize: '0.7rem' }}
                                     />
                                   </label>
                                 ))}

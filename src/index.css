@@ -715,11 +715,12 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
   border-bottom: 1px solid var(--border);
 }
 .setup-matrix-table .setup-dte-section__header {
-  display: flex;
+  display: grid;
+  grid-template-columns: 17.5rem minmax(0, 1fr);
   align-items: center;
-  gap: 0.5rem;
+  column-gap: 1.25rem;
   width: 100%;
-  padding: 0.4rem 0.65rem;
+  padding: 0.28rem 0.65rem;
   background: rgba(255, 255, 255, 0.02);
   border: none;
   cursor: pointer;
@@ -752,12 +753,51 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
   font-family: var(--mono);
   color: var(--text-muted);
 }
+.setup-matrix-table .setup-dte-section__toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+  padding: 0;
+}
 .setup-matrix-table .setup-dte-section__live {
-  margin-left: auto;
+  margin-left: 0.35rem;
   font-size: 0.65rem;
   font-family: var(--mono);
   color: var(--text-muted);
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.setup-matrix-table .setup-dte-section__controls {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex-wrap: nowrap;
+  justify-self: start;
+  min-width: 0;
+}
+.setup-matrix-table .setup-dte-section__field {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.setup-matrix-table .setup-dte-section__field input {
+  width: 2.7rem;
+  padding: 0.12rem 0.28rem;
+  font-size: 0.7rem;
+}
+.setup-matrix-table .setup-dte-section__field input[data-wide='true'] {
+  width: 4.6rem;
 }
 .setup-matrix-table .setup-dte-section__empty {
   padding: 1.25rem 0.85rem;
