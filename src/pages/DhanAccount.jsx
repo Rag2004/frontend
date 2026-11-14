@@ -240,11 +240,6 @@ export default function DhanAccount() {
         <ShieldCheck className="h-5 w-5" aria-hidden />
         Dhan Account (Live) — Auth & Token
       </h2>
-      <div className="subtitle">
-        <strong>Generate token</strong> — new 24h JWT using PIN + authenticator code (left panel).{' '}
-        <strong>Renew token</strong> — extend an <em>already valid</em> JWT via Dhan RenewToken (right panel).{' '}
-        <strong>Refresh token</strong> (right panel) — only if the server has DHAN_LIVE_* TOTP secrets in <code className="timestamp">.env</code>; otherwise use Generate.
-      </div>
 
       <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.85rem' }}>
         <span className="badge" style={{ background: 'rgba(52,211,153,0.12)', color: 'var(--positive)' }}>
@@ -286,7 +281,6 @@ export default function DhanAccount() {
               <LockKeyhole className="h-4 w-4" aria-hidden />
               <div>
                 <div style={{ fontWeight: 700, letterSpacing: '0.02em' }}>Generate access token (Live)</div>
-                <div className="timestamp">PIN + TOTP are not stored; token is stored in Mongo for services.</div>
               </div>
             </div>
           </div>
@@ -335,7 +329,6 @@ export default function DhanAccount() {
                 <RefreshCw className="mr-1 inline h-3.5 w-3.5" aria-hidden />
                 Generate token
               </button>
-              <span className="timestamp">Use authenticator app code; refresh if expired.</span>
             </div>
           </div>
         </div>
@@ -355,10 +348,6 @@ export default function DhanAccount() {
           onRefresh={() => action('live', 'refresh')}
           onRenew={() => action('live', 'renew')}
         />
-      </div>
-
-      <div className="timestamp" style={{ marginTop: '0.85rem' }}>
-        Live-only mode. Execution services read the token from Mongo (`broker_tokens`) and fall back to `.env` if needed.
       </div>
     </div>
   );

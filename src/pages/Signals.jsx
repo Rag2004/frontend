@@ -21,18 +21,6 @@ export default function Signals() {
   return (
     <div className="card">
       <h2>Signals (Derivatives)</h2>
-      <div className="signal-engine-info">
-        <strong>When are live signals processed?</strong>
-        <ul>
-          <li><strong>Strategy loop:</strong> every <strong>45 seconds</strong> — runs all enabled strategies, emits TradeIntents</li>
-          <li><strong>Market fetcher:</strong> every <strong>3.5 seconds</strong> — fetches option chain from Dhan</li>
-          <li>Signals are processed immediately when conditions are met (entry window, target, SL, time exit)</li>
-          <li>Enable strategies in Settings and set Symbol; no signals until market data is fetched</li>
-        </ul>
-      </div>
-      <p className="subtitle">
-        Approved signals. Strategies emit signals when entry/target/SL/time-exit conditions are met. Turn Algo Status ON in Settings.
-      </p>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', marginBottom: '1rem', alignItems: 'center' }}>
         <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Strategy:</span>

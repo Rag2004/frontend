@@ -93,12 +93,6 @@ export default function Settings() {
   return (
     <div className="card">
       <h2>Strategy Configuration</h2>
-      <p className="subtitle" style={{ marginBottom: '0.5rem' }}>
-        Strategies are coded on the backend. To start: <strong>Edit</strong> → choose <strong>Symbol</strong> → <strong>Save</strong> → turn <strong>Algo Status ON</strong>.
-      </p>
-      <p className="subtitle" style={{ marginBottom: '1rem', fontSize: '0.8rem' }}>
-        If a symbol fails (Invalid SecurityId), use <strong>NIFTY 50</strong> or <strong>BANK NIFTY</strong>. No trades until market data is fetched.
-      </p>
       {loadError && (
         <div style={{ padding: '0.75rem', background: 'rgba(248,113,113,0.15)', color: 'var(--negative)', border: '1px solid rgba(248,113,113,0.3)', borderRadius: 6, marginBottom: '1rem', fontSize: '0.9rem' }}>
           {loadError}

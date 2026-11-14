@@ -387,9 +387,6 @@ export default function Analytics() {
       <header className="pnl-hero">
         <div className="pnl-hero__titles">
           <h1>Analytics</h1>
-          <p className="pnl-hero__subtitle">
-            Capital used · Gross PnL · Charges = peak lots × trades × ₹/lot/trade (changing the rate updates rolled-up history)
-          </p>
         </div>
         <div className="pnl-hero__controls" style={{ flexWrap: 'wrap', gap: 8 }}>
           <div className="pnl-env-seg" role="group" aria-label="Scope">

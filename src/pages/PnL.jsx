@@ -694,7 +694,6 @@ export default function PnL() {
       <header className="pnl-hero">
         <div className="pnl-hero__titles">
           <h1>Profit &amp; Loss</h1>
-          <p className="pnl-hero__subtitle">Live book · strategy attribution · session deltas</p>
         </div>
         <div className="pnl-hero__controls">
           <div className="pnl-env-seg" role="group" aria-label="Execution environment">
@@ -989,7 +988,6 @@ export default function PnL() {
             </section>
           )}
 
-          {data.ts && <p className="pnl-footer-inst">Polling every 5s · Last tick aligned with PnL data above</p>}
         </>
       )}
 

@@ -118,12 +118,6 @@ export default function KotakAccount() {
         {sessionReady ? <ShieldCheck className="h-5 w-5" aria-hidden /> : <ShieldAlert className="h-5 w-5" aria-hidden />}
         Kotak Neo (live) — credentials + session
       </h2>
-      <div className="subtitle">
-        Live TOE reads <code className="timestamp">broker:kotak:prod</code>. Save credentials first, then{' '}
-        <strong>Generate session</strong> (uses typed 6-digit TOTP, or the saved TOTP secret if the field is empty).
-        That writes <code className="timestamp">trade_token</code> / <code className="timestamp">trade_sid</code> Neo
-        needs for orders. Desk login alone is not enough — unlock Setup before Save / Generate.
-      </div>
 
       <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', margin: '0.85rem 0' }}>
         <span
