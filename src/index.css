@@ -1561,15 +1561,11 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 }
 .desk-book-tape .pnl-desk-tape__scroll {
   flex-wrap: nowrap;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
-  gap: 1rem;
-  padding: 0.55rem 1rem;
+  gap: 0.35rem 1.25rem;
+  padding: 0.28rem 1rem;
   min-width: max-content;
-}
-.desk-book-tape .pnl-desk-tape__metric:nth-child(-n+4) .pnl-desk-tape__v {
-  min-width: 8rem;
-  text-align: right;
 }
 .pnl-hero {
   display: flex;
