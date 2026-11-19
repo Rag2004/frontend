@@ -16,6 +16,7 @@ import SetupUnlock from './pages/SetupUnlock';
 import { isBrokerReconciliationDesk } from './config/deskProfile';
 import { DeskShellProvider, useDeskShell } from './context/DeskShellContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { BookTape } from './components/BookTape';
 import { GlobalAlertStrip } from './components/GlobalAlertStrip';
 import { RouteErrorBoundary } from './components/RouteErrorBoundary';
 import { NotificationBell } from './components/NotificationBell';
@@ -238,6 +239,7 @@ function AppShell() {
             ) : null}
           </div>
         </header>
+        <BookTape />
         <GlobalAlertStrip
           risk={risk}
           health={health}

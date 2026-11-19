@@ -1542,7 +1542,11 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
   background: transparent;
 }
 
-/* Hero — compact header row */
+.desk-book-tape {
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border-subtle);
+  background: linear-gradient(90deg, rgba(15, 23, 42, 0.96) 0%, rgba(30, 41, 59, 0.92) 100%);
+}
 .pnl-hero {
   display: flex;
   flex-wrap: wrap;
@@ -1563,6 +1567,52 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 }
 .pnl-hero__titles .pnl-subtitle {
   display: none;
+}
+.pnl-desk-tape__scroll {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  padding: 0.45rem 0.75rem;
+  font-size: 0.72rem;
+  font-family: var(--mono);
+}
+.pnl-desk-tape__chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.5rem;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.58rem;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+}
+.pnl-desk-tape__chip--accent {
+  border-color: rgba(56, 189, 248, 0.35);
+  color: var(--accent);
+  background: rgba(56, 189, 248, 0.08);
+}
+.pnl-desk-tape__metric {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35rem;
+}
+.pnl-desk-tape__metric--mono .pnl-desk-tape__v {
+  font-size: 0.68rem;
+  color: var(--text);
+}
+.pnl-desk-tape__k {
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.58rem;
+}
+.pnl-desk-tape__v {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }
 .pnl-hero__controls {
   display: flex;
