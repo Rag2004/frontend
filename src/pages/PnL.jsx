@@ -762,42 +762,6 @@ export default function PnL() {
         </div>
       </header>
 
-      <section className="pnl-desk-tape" aria-label="Book snapshot">
-        <div className="pnl-desk-tape__scroll">
-          <span className="pnl-desk-tape__chip pnl-desk-tape__chip--accent">
-            {DESK_BOOK.bookChip} book
-          </span>
-          <span className="pnl-desk-tape__metric">
-            <span className="pnl-desk-tape__k">Total</span>
-            <span className={cn('pnl-desk-tape__v', pnlColor(bookTotal))}>
-              ₹{bookTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </span>
-          </span>
-          <span className="pnl-desk-tape__metric">
-            <span className="pnl-desk-tape__k">Realised</span>
-            <span className={cn('pnl-desk-tape__v', pnlColor(bookRealized))}>
-              ₹{bookRealized.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </span>
-          </span>
-          <span className="pnl-desk-tape__metric">
-            <span className="pnl-desk-tape__k">Unrealised</span>
-            <span className={cn('pnl-desk-tape__v', pnlColor(bookUnrealized))}>
-              ₹{bookUnrealized.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </span>
-          </span>
-          <span className="pnl-desk-tape__metric">
-            <span className="pnl-desk-tape__k">Strategies</span>
-            <span className="pnl-desk-tape__v" style={{ color: 'var(--text)' }}>
-              {strategyCount}
-            </span>
-          </span>
-          <span className="pnl-desk-tape__metric pnl-desk-tape__metric--mono">
-            <span className="pnl-desk-tape__k">Mark</span>
-            <span className="pnl-desk-tape__v">{data.ts ? toISTTime(data.ts) : '—'}</span>
-          </span>
-        </div>
-      </section>
-
       {errorBanner}
 
       <div className="pnl-tabs-pills" role="tablist" aria-label="PnL views">

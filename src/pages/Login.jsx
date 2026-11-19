@@ -75,9 +75,8 @@ export default function Login() {
     <div className="login-page">
       <div className="login-split">
         <aside className="login-brand" aria-hidden="false">
-          <div className="login-brand__mark">QE</div>
-          <h1 className="login-brand__title">Quant Engine</h1>
-          <p className="login-brand__sub">Options desk · secure sign-in</p>
+          <div className="login-brand__mark">IX7</div>
+          <h1 className="login-brand__title">IX7 Live Desk</h1>
           <span className="login-env">{String(envBadge)}</span>
         </aside>
         <div className="login-panel">
