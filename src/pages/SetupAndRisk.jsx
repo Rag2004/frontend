@@ -337,9 +337,23 @@ export default function SetupAndRisk() {
     loadRms();
   };
   const toggleAccount = async () => {
-    const s = !(rmsConfig?.account_enabled ?? true);
-    await deskFetch(`${RMS_API}/account/toggle?enabled=${s}`, { method: 'POST' });
-    flash(s ? 'Account ENABLED' : 'Account DISABLED');
+    const nextEnabled = !(rmsConfig?.account_enabled ?? true);
+    if (!nextEnabled) {
+      const ok = window.confirm(
+        'Turn Account OFF? This cancels orders already in the TOE pipeline and blocks new orders. Open positions stay open unless you use Square Off All.',
+      );
+      if (!ok) return;
+    }
+    const r = await deskFetch(`${RMS_API}/account/toggle?enabled=${nextEnabled}`, { method: 'POST' });
+    const body = await r.json().catch(() => ({}));
+    if (nextEnabled) {
+      flash('Account ENABLED');
+    } else {
+      const cancelled = body.pipeline_cancelled || {};
+      const working = Array.isArray(cancelled.working) ? cancelled.working.length : Number(cancelled.working || 0);
+      const intents = Number(cancelled.intents || 0);
+      flash(`Account DISABLED — cancelled ${working} working, ${intents} queued`);
+    }
     loadRms();
   };
   const killAccount = async () => {
@@ -894,7 +908,7 @@ export default function SetupAndRisk() {
             </div>
           </PanelHeader>
           <div style={{ padding: '0.75rem 1rem', fontSize: '0.72rem', color: 'var(--text-muted)', fontFamily: 'var(--mono)', lineHeight: 1.5 }}>
-            Master switch. <strong style={{ color: 'var(--warning)' }}>SQUARE OFF ALL POSITIONS</strong> — flattens open positions then disables all trading.
+            Account OFF cancels orders already in the TOE pipeline and blocks new orders. Open positions stay open. <strong style={{ color: 'var(--warning)' }}>SQUARE OFF ALL POSITIONS</strong> flattens the book, then disables trading.
           </div>
         </div>
         <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 4, overflow: 'hidden' }}>
