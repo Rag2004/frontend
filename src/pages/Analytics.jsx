@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import {
   Area,
@@ -94,6 +94,56 @@ function sumPortfolioDay(rows) {
     payoff_ratio: avgWin != null && avgLoss ? avgWin / Math.abs(avgLoss) : null,
     status: rows.some((row) => row.status === 'provisional') ? 'provisional' : 'final',
   };
+}
+
+function PortfolioPicker({ choices, selected, onChange }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const onDoc = (event) => {
+      if (ref.current && !ref.current.contains(event.target)) setOpen(false);
+    };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, [open]);
+
+  const toggle = (id) => {
+    onChange(selected.includes(id) ? selected.filter((item) => item !== id) : [...selected, id]);
+  };
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        type="button"
+        className="max-w-[16rem] truncate rounded-desk-sm border border-desk-border bg-desk-panel px-2 py-1 text-left text-xs text-desk-text"
+        aria-label="Portfolios"
+        aria-expanded={open}
+        onClick={() => setOpen((value) => !value)}
+      >
+        {selected.length ? selected.join(', ') : 'Select portfolios'}
+      </button>
+      {open && (
+        <div className="absolute right-0 z-20 mt-1 max-h-64 min-w-[12rem] overflow-auto rounded-desk-sm border border-desk-border bg-desk-panel p-1 shadow-lg">
+          {choices.length === 0 ? (
+            <div className="px-2 py-1 text-xs text-desk-muted">No portfolios</div>
+          ) : (
+            choices.map((item) => (
+              <label key={item.id} className="flex cursor-pointer items-center gap-2 px-2 py-1 text-xs text-desk-text">
+                <input
+                  type="checkbox"
+                  checked={selected.includes(item.id)}
+                  onChange={() => toggle(item.id)}
+                />
+                {item.id}
+              </label>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
 }
 
 function pnlColor(v) {
@@ -197,7 +247,7 @@ export default function Analytics() {
   const [customTo, setCustomTo] = useState(() => todayISTDateStr());
   const [scope, setScope] = useState('overall');
   const [strategyId, setStrategyId] = useState('');
-  const [portfolioId, setPortfolioId] = useState('');
+  const [portfolioIds, setPortfolioIds] = useState([]);
   const [strategies, setStrategies] = useState([]);
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
@@ -235,7 +285,7 @@ export default function Analytics() {
   }, []);
 
   const loadPeriod = useCallback(() => {
-    if ((scope === 'strategy' && !strategyId.trim()) || (scope === 'portfolio' && !portfolioId.trim())) {
+    if ((scope === 'strategy' && !strategyId.trim()) || (scope === 'portfolio' && portfolioIds.length === 0)) {
       setLoading(false);
       setError(null);
       setData(null);
@@ -261,7 +311,7 @@ export default function Analytics() {
       params.set('month', monthStr);
     }
     if (scope === 'strategy' && strategyId) params.set('strategy_id', strategyId);
-    if (scope === 'portfolio' && portfolioId) params.set('strategy_id', portfolioId);
+    if (scope === 'portfolio' && portfolioIds.length) params.set('strategy_id', portfolioIds.join(','));
     fetch(`${API}/analytics/pnl?${params}`)
       .then((r) => {
         if (!r.ok) throw new Error(`Analytics API ${r.status}`);
@@ -270,7 +320,7 @@ export default function Analytics() {
       .then((d) => setData(d))
       .catch((e) => setError(e.message || 'Failed to load analytics'))
       .finally(() => setLoading(false));
-  }, [monthStr, scope, strategyId, portfolioId, broker, isCustomRange, customFrom, customTo]);
+  }, [monthStr, scope, strategyId, portfolioIds, broker, isCustomRange, customFrom, customTo]);
 
   useEffect(() => {
     loadPeriod();
@@ -281,14 +331,14 @@ export default function Analytics() {
   }, [loadBrokerCharges]);
 
   useEffect(() => {
-    if ((scope === 'strategy' && !strategyId.trim()) || (scope === 'portfolio' && !portfolioId.trim())) {
+    if ((scope === 'strategy' && !strategyId.trim()) || (scope === 'portfolio' && portfolioIds.length === 0)) {
       setMonthsAvg(null);
       return undefined;
     }
     let alive = true;
     const params = new URLSearchParams({ months: '12', scope, broker });
     if (scope === 'strategy' && strategyId) params.set('strategy_id', strategyId);
-    if (scope === 'portfolio' && portfolioId) params.set('strategy_id', portfolioId);
+    if (scope === 'portfolio' && portfolioIds.length) params.set('strategy_id', portfolioIds.join(','));
     fetch(`${API}/analytics/months?${params}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((j) => {
@@ -300,7 +350,7 @@ export default function Analytics() {
     return () => {
       alive = false;
     };
-  }, [scope, strategyId, portfolioId, broker]);
+  }, [scope, strategyId, portfolioIds, broker]);
 
   useEffect(() => {
     fetch(`${API}/strategies`)
@@ -330,9 +380,11 @@ export default function Analytics() {
 
   const portfolioChoices = useMemo(() => listClockFamilies(strategies), [strategies]);
   const portfolioMembers = useMemo(() => {
-    const found = portfolioChoices.find((item) => item.id === portfolioId);
-    return found?.members || [];
-  }, [portfolioChoices, portfolioId]);
+    const chosen = new Set(portfolioIds);
+    return portfolioChoices
+      .filter((item) => chosen.has(item.id))
+      .flatMap((item) => item.members);
+  }, [portfolioChoices, portfolioIds]);
   const sortedDayStrategies = useMemo(() => {
     let rows = dayDetail?.strategies || [];
     if (scope === 'portfolio') {
@@ -426,9 +478,9 @@ export default function Analytics() {
   const summary = data?.summary;
   const scopeLabel = useMemo(() => {
     if (scope === 'strategy') return cleanName(strategyId) || 'Strategy';
-    if (scope === 'portfolio') return portfolioId || 'Portfolio';
+    if (scope === 'portfolio') return portfolioIds.join(', ') || 'Portfolio';
     return 'Overall';
-  }, [scope, strategyId, portfolioId]);
+  }, [scope, strategyId, portfolioIds]);
 
   return (
     <div className="card pnl-page pnl-page--inst">
@@ -461,19 +513,11 @@ export default function Analytics() {
             </button>
           </div>
           {scope === 'portfolio' && (
-            <select
-              className="rounded-desk-sm border border-desk-border bg-desk-panel px-2 py-1 text-xs text-desk-text"
-              value={portfolioId}
-              onChange={(e) => setPortfolioId(e.target.value)}
-              aria-label="Portfolio"
-            >
-              <option value="">Select portfolio...</option>
-              {portfolioChoices.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.id}
-                </option>
-              ))}
-            </select>
+            <PortfolioPicker
+              choices={portfolioChoices}
+              selected={portfolioIds}
+              onChange={setPortfolioIds}
+            />
           )}
           {scope === 'strategy' && (
             <select
@@ -827,9 +871,9 @@ export default function Analytics() {
           Choose a strategy from the dropdown to load {periodLabel} (overall totals use the other tab).
         </p>
       )}
-      {scope === 'portfolio' && !portfolioId.trim() && (
+      {scope === 'portfolio' && portfolioIds.length === 0 && (
         <p className="mb-2 rounded-desk-sm border border-amber-500/40 bg-amber-500/10 px-3 py-2 font-mono text-[0.65rem] text-amber-200">
-          Choose a portfolio such as NF_PEN_12. That rolls up every tranche in the family.
+          Choose one or more portfolios such as NF_PEN_12. Each one rolls up every tranche in that family.
         </p>
       )}
 
@@ -1130,7 +1174,7 @@ export default function Analytics() {
                     </tr>
                   ))}
                   <tr className="border-t-2 border-desk-border bg-black/30 qd-table-overall">
-                    <td className="px-3 py-2 font-bold">{scope === 'portfolio' ? (portfolioId || 'Portfolio') : 'Overall'}</td>
+                    <td className="px-3 py-2 font-bold">{scope === 'portfolio' ? (portfolioIds.join(', ') || 'Portfolio') : 'Overall'}</td>
                     <td
                       className="px-3 py-2 text-right font-mono tabular-nums"
                       title={
