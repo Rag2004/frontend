@@ -1536,7 +1536,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
   box-shadow: none;
 }
 .pnl-page--inst.card {
-  padding: 0.75rem 1rem 0.75rem;
+  padding: 0.75rem 0;
   margin-bottom: 0;
   border: none;
   background: transparent;
@@ -1544,8 +1544,22 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .desk-book-tape {
   flex-shrink: 0;
+  min-width: 0;
+  overflow-x: auto;
   border-bottom: 1px solid var(--border-subtle);
   background: linear-gradient(90deg, rgba(15, 23, 42, 0.96) 0%, rgba(30, 41, 59, 0.92) 100%);
+}
+.desk-book-tape .pnl-desk-tape__scroll {
+  flex-wrap: nowrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.55rem 1rem;
+  min-width: max-content;
+}
+.desk-book-tape .pnl-desk-tape__metric:nth-child(-n+4) .pnl-desk-tape__v {
+  min-width: 8rem;
+  text-align: right;
 }
 .pnl-hero {
   display: flex;
