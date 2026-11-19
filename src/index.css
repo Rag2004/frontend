@@ -328,6 +328,8 @@ body {
   overflow-x: auto;
   overflow-y: auto;
   background: transparent;
+  position: relative;
+  z-index: 0;
 }
 
 /* Scrollbars (WebKit) */
@@ -1542,12 +1544,20 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
   background: transparent;
 }
 
+.desk-chrome {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  flex-shrink: 0;
+  background: var(--surface-panel);
+}
 .desk-book-tape {
   flex-shrink: 0;
   min-width: 0;
   overflow-x: auto;
+  overflow-y: hidden;
   border-bottom: 1px solid var(--border-subtle);
-  background: linear-gradient(90deg, rgba(15, 23, 42, 0.96) 0%, rgba(30, 41, 59, 0.92) 100%);
+  background: var(--surface-panel);
 }
 .desk-book-tape .pnl-desk-tape__scroll {
   flex-wrap: nowrap;

@@ -201,6 +201,7 @@ function AppShell() {
         </div>
       </aside>
       <div className="workspace">
+        <div className="desk-chrome">
         <header className="top-bar top-bar--desk">
           <div className="top-bar-center">
             <span className="clock-label">IST</span>
@@ -240,6 +241,7 @@ function AppShell() {
           </div>
         </header>
         <BookTape />
+        </div>
         <GlobalAlertStrip
           risk={risk}
           health={health}
