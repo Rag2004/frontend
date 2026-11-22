@@ -111,7 +111,7 @@ export default function BrokerReconciliation() {
     setConfirmBusy(true);
     setError('');
     try {
-      const r = await fetch(`${API}/reconciliation/state-alerts/confirm`, {
+      const r = await deskFetch(`${API}/reconciliation/state-alerts/confirm`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
