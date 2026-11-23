@@ -40,11 +40,13 @@ export const defaultMlLeg = () => ({
   limit_price: '',
 });
 
-/** Qty per 1 lot — prefer /api/symbols row; else NIFTY=65, SENSEX=20 (matches Backend). */
-export const getContractMultiplier = (underlyingScrip, symbolList) => {
+/** Qty per 1 lot. GOLDM is 10 even when the live future id is not in the symbol list. */
+export const getContractMultiplier = (underlyingScrip, symbolList, strategyId) => {
+  if (String(strategyId || '').startsWith('GOLDM_')) return 10;
   const u = Number(underlyingScrip);
   const row = (symbolList || []).find((x) => Number(x.security_id) === u);
   if (row != null && row.lot_size != null && row.lot_size !== '') return Number(row.lot_size);
+  if (String(row?.symbol_name || '').toUpperCase() === 'GOLDM') return 10;
   if (u === 13) return 65;
   if (u === 15) return 20;
   return 25;

@@ -101,7 +101,7 @@ export default function ManualTrade() {
     rmsStrategies.forEach((s) => {
       const bc = configs.find((c) => c.strategy_id === s.id);
       const underlying = Number(bc?.underlying_scrip ?? 13);
-      const mult = getContractMultiplier(underlying, symbols);
+      const mult = getContractMultiplier(underlying, symbols, s.id);
       const lot = s.lot_size ?? (s.order_quantity ? Math.round(s.order_quantity / mult) : 1);
       next[s.id] = lot;
     });
@@ -186,7 +186,7 @@ export default function ManualTrade() {
     }
     const firstId = selectedIds[0];
     const bc = configs.find((c) => c.strategy_id === firstId);
-    const mult = getContractMultiplier(Number(bc?.underlying_scrip ?? 13), symbols);
+    const mult = getContractMultiplier(Number(bc?.underlying_scrip ?? 13), symbols, firstId);
     const rmsRow = rmsStrategies.find((s) => s.id === firstId);
     const lotFallback = rmsRow?.lot_size ?? (rmsRow?.order_quantity ? Math.round(Number(rmsRow.order_quantity) / mult) : null);
     const lot = Math.max(1, lotSizes[firstId] ?? lotFallback ?? 1);
