@@ -42,13 +42,11 @@ function writeOpenSections(ids) {
   }
 }
 
-/** Qty per 1 lot. GOLDM is 10 even when the live future id is not in the symbol list. */
-const getContractMultiplier = (underlyingScrip, symbolList, strategyId) => {
-  if (String(strategyId || '').startsWith('GOLDM_')) return 10;
+/** Qty per 1 lot — prefer /api/symbols row; else NIFTY=65, SENSEX=20 (matches Backend). */
+const getContractMultiplier = (underlyingScrip, symbolList) => {
   const u = Number(underlyingScrip);
   const row = (symbolList || []).find((x) => Number(x.security_id) === u);
   if (row != null && row.lot_size != null && row.lot_size !== '') return Number(row.lot_size);
-  if (String(row?.symbol_name || '').toUpperCase() === 'GOLDM') return 10;
   if (u === 13) return 65;
   if (u === 15) return 20;
   return 25;
@@ -156,7 +154,7 @@ export default function SetupAndRisk() {
     rmsStrategies.forEach((s) => {
       const bc = configs.find((c) => c.strategy_id === s.id);
       const underlying = Number(bc?.underlying_scrip ?? 13);
-      const mult = getContractMultiplier(underlying, symbols, s.id);
+      const mult = getContractMultiplier(underlying, symbols);
       const lot = s.lot_size ?? (s.order_quantity ? Math.round(s.order_quantity / mult) : 1);
       next[s.id] = lot;
     });
@@ -457,7 +455,7 @@ export default function SetupAndRisk() {
     });
     setSaving(false);
     const bc = configs.find((c) => c.strategy_id === strategyId);
-    const mult = getContractMultiplier(bc?.underlying_scrip ?? 13, symbols, strategyId);
+    const mult = getContractMultiplier(bc?.underlying_scrip ?? 13, symbols);
     const qty = Number(lotSize) * mult;
     const rc = getRmsCfg(strategyId);
     const sl = strategySl[strategyId];
@@ -572,7 +570,7 @@ export default function SetupAndRisk() {
 
   const renderStrategyRow = (s, sectionId) => {
     const underlying = Number((s.bc?.underlying_scrip) ?? 13);
-    const lotMultiplier = getContractMultiplier(underlying, symbols, s.id);
+    const lotMultiplier = getContractMultiplier(underlying, symbols);
     const lot = Math.max(1, lotSizes[s.id] ?? s.rc?.lot_size ?? (s.rc?.order_quantity ? Math.round(s.rc.order_quantity / lotMultiplier) : 1));
     const qty = lot * lotMultiplier;
     const capital = baseCapitalDeployed(lot, marginPerLotForSection(sectionId));
@@ -608,10 +606,7 @@ export default function SetupAndRisk() {
             onChange={(e) => saveStrategySymbol(s.id, Number(e.target.value))}
             style={{ padding: '0.2rem 0.35rem', fontSize: '0.78rem' }}
           >
-            {(String(s.id).startsWith('GOLDM_')
-              ? symbols.filter((sym) => String(sym.symbol_name || '').toUpperCase() === 'GOLDM')
-              : symbols
-            ).map(sym => (
+            {symbols.map(sym => (
               <option key={sym.security_id} value={sym.security_id}>
                 {sym.display_name || sym.symbol_name || sym.security_id}
               </option>
@@ -1014,7 +1009,7 @@ export default function SetupAndRisk() {
               {(() => {
                 const row = mergedStrategies.find((x) => x.id === editLimits);
                 const underlying = Number(row?.bc?.underlying_scrip ?? 13);
-                const mult = getContractMultiplier(underlying, symbols, editLimits);
+                const mult = getContractMultiplier(underlying, symbols);
                 const lot = Math.max(1, lotSizes[editLimits] ?? row?.rc?.lot_size ?? (row?.rc?.order_quantity ? Math.round(row.rc.order_quantity / mult) : 1));
                 const sl = strategySl[editLimits];
                 const disp = formatMaxLossDisplay(sl, { max_daily_loss: stratForm.max_daily_loss }, lot);

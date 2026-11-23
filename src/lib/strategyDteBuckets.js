@@ -13,6 +13,10 @@ export const DTE_FILTERS = {
 
 export const DTE_FILTER_OPTIONS = [
   { value: DTE_FILTERS.ALL, label: 'All' },
+  { value: DTE_FILTERS.NIFTY_0DT, label: 'Nifty 0DTE' },
+  { value: DTE_FILTERS.NIFTY_1DT, label: 'Nifty 1DTE' },
+  { value: DTE_FILTERS.NIFTY_2DT, label: 'Nifty 2DTE' },
+  { value: DTE_FILTERS.SENSEX_0DT, label: 'Sensex 0DTE' },
   { value: DTE_FILTERS.GOLDM, label: 'GOLDM' },
 ];
 
@@ -51,8 +55,12 @@ const STRATEGY_DTE_BUCKETS = {
   ...Object.fromEntries(SN_275_IDS.map((id) => [id, [DTE_FILTERS.SENSEX_0DT]])),
 };
 
-/** All view on this desk is the GOLDM book only. */
+/** Fixed section order for All view — exactly the four dashboard sections. */
 const ALL_VIEW_SECTION_DEFS = [
+  { id: DTE_FILTERS.NIFTY_0DT, label: 'Nifty 0DTE' },
+  { id: DTE_FILTERS.NIFTY_1DT, label: 'Nifty 1DTE' },
+  { id: DTE_FILTERS.NIFTY_2DT, label: 'Nifty 2DTE' },
+  { id: DTE_FILTERS.SENSEX_0DT, label: 'Sensex 0DTE' },
   { id: DTE_FILTERS.GOLDM, label: 'GOLDM' },
 ];
 
