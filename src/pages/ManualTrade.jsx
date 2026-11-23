@@ -369,7 +369,8 @@ export default function ManualTrade() {
                   {backendStrategies.map((sid) => {
                     const bc = getBackendCfg(sid);
                     const sym = symbols.find((s) => Number(s.security_id) === Number(bc.underlying_scrip));
-                    const label = sym?.display_name || sym?.symbol_name || bc.underlying_scrip || '—';
+                    const label = sym?.display_name || sym?.symbol_name
+                      || (String(sid).startsWith('GOLDM_') ? 'GOLDM' : (bc.underlying_scrip || '—'));
                     const checked = selectedIds.includes(sid);
                     return (
                       <label
