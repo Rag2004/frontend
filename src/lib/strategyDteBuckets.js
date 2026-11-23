@@ -8,7 +8,6 @@ export const DTE_FILTERS = {
   NIFTY_1DT: 'nifty_1dt',
   NIFTY_2DT: 'nifty_2dt',
   SENSEX_0DT: 'sensex_0dt',
-  GOLDM: 'goldm',
 };
 
 export const DTE_FILTER_OPTIONS = [
@@ -17,7 +16,6 @@ export const DTE_FILTER_OPTIONS = [
   { value: DTE_FILTERS.NIFTY_1DT, label: 'Nifty 1DTE' },
   { value: DTE_FILTERS.NIFTY_2DT, label: 'Nifty 2DTE' },
   { value: DTE_FILTERS.SENSEX_0DT, label: 'Sensex 0DTE' },
-  { value: DTE_FILTERS.GOLDM, label: 'GOLDM' },
 ];
 
 const NIFTY_MULTI = [DTE_FILTERS.NIFTY_0DT, DTE_FILTERS.NIFTY_1DT, DTE_FILTERS.NIFTY_2DT];
@@ -61,19 +59,17 @@ const ALL_VIEW_SECTION_DEFS = [
   { id: DTE_FILTERS.NIFTY_1DT, label: 'Nifty 1DTE' },
   { id: DTE_FILTERS.NIFTY_2DT, label: 'Nifty 2DTE' },
   { id: DTE_FILTERS.SENSEX_0DT, label: 'Sensex 0DTE' },
-  { id: DTE_FILTERS.GOLDM, label: 'GOLDM' },
 ];
 
 export function getStrategyDteBuckets(strategyId) {
-  if (String(strategyId || '').startsWith('GOLDM_')) return [DTE_FILTERS.GOLDM];
   const buckets = STRATEGY_DTE_BUCKETS[strategyId];
   return Array.isArray(buckets) ? [...buckets] : [];
 }
 
 export function strategyMatchesDteFilter(strategyId, filter) {
   const f = filter || DTE_FILTERS.ALL;
-  const buckets = getStrategyDteBuckets(strategyId);
-  if (!buckets.length) return false;
+  const buckets = STRATEGY_DTE_BUCKETS[strategyId];
+  if (!buckets?.length) return false;
   if (f === DTE_FILTERS.ALL) return true;
   return buckets.includes(f);
 }
@@ -96,9 +92,8 @@ function splitClockFamilies(strategies) {
   const groups = new Map();
   const solo = [];
   for (const strategy of strategies) {
-    const id = String(strategy?.id || '');
-    const match = CLOCK_FAMILY.exec(id);
-    if (!match || id.startsWith('GOLDM_')) {
+    const match = CLOCK_FAMILY.exec(String(strategy?.id || ''));
+    if (!match) {
       solo.push(strategy);
       continue;
     }
