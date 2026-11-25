@@ -13,6 +13,7 @@ export const STRATEGY_METADATA = {
   SN_S07_V2: { entry: '14:00' },
   SN_S08: { entry: '12:45+' },
   SN_S09: { entry: '12:30' },
+  SN_GLT_01: { entry: '09:16' },
   MANUAL_TEST: { entry: 'Manual' },
   NF_S01_V1: { entry: '09:25' },
   NF_S05_V1: { entry: '09:25' },
